@@ -131,7 +131,7 @@ const cards = [
     content: <SkeletonFour />,
     className: "col-span-1",
     thumbnail:
-      "https://lh3.googleusercontent.com/pw/AP1GczOxKDdW5sZg2Rnn16mJd-2gtyKepB4CPR7RDmPcaUDEhE6gH9jLJXMq3w02LviTNSv3L5-xqTlyYvJAvj3oyYAnSVDD-mmeA61wwDtry2nSyvP_CQKT0nj3PRRblIJT1aWnm-0GSMJDJsyVwi1NPy7bfv1dSZ_rzQ0uw_PEVh5-yO_ggn-PzoGg-CbftlhjiwbtETwFkw6HdoCxg5i-KzoPAAWr4ep4z9m3b_VCgY9Nfby9PiqDHjtmF_MJhI4Rs684IevgVSGjgBU64HdqEPColCvNaUf4w-amYsGtZMkQ6wSxqSaGlXsxEt8NkquGH4mH83pQwAGan-iT3geiczg3OHrpEo4q7xOwC5SIvwNVyLU0opwHTK0dZ1MTNliWsG5iveWGrMX_gwH6rWnYlMtHACDiwOebb4-pWOQzcl2bOlVYFaBUpuvEAk3XO7mZWLqOm3NmkZTd7GOYK0xwGSBIlDYH-aYv05RVv2id6KPPbDsPyo5lPwuoG4nqKnUDb8hiCuWagR7BG58TsbKyzrfAOsra8L4amZ4byQ0Kv5P_z3Kdp8SNqtcKrB6fwF_h3h0dOYVtYYWmc1yHYRpAppKTreHw1n6_rrcrhwSVVXyA1E4rM-9go8N-45bhmix9okE8PluTNbAtWS9onSI3-V8H6oRuvqW4rkNl2VhsvodLTenHNsYGhk2ojK80b7OqUP3ZI8-ncNXuyYbw_o6YIRlOR_F4-_UMw4p5-FoWWvhOoR074D_M96eHj1z0bsblH3w6h59qaX8gyeZUYVFkynSAPhQYN9anQ2Tzas48L7KiEQWlSck1BtFyoNUYt989HmCk9CbadrhevexF9nywPF7_AnOGe5mM64QxsE1yOZ16bqTBW5OhGQSk3RqaR3o2gvEsUOVeKTpHu-nM2Z2mRUHJQIT5z6maVQ-3Z93-Du5N2nk3KpKDjedMSlAN=w600-h400-s-no-gm?authuser=0",
+      "https://i.ibb.co/wrQLCKR/123-design.png",
   },
   {
     id: 5,
