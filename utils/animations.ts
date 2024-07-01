@@ -16,7 +16,7 @@ export const animatePageIn = () => {
         }).to([bannerOne, bannerTwo, bannerThree, bannerFour], {
             yPercent: 100,
             stagger: 0.2,
-            backgroundColor: "rgb(0, 111, 184)", // Update to match your palette
+            backgroundColor: "rgb(15, 23, 42)", // Update to match bg-slate-950
         });
     }
 };
