@@ -199,21 +199,14 @@ const SkeletonFive = () => {
       <p className="font-bold text-4xl text-white">Work Experience</p>
       <p className="font-normal text-base text-white"></p>
       <p className="font-normal text-base my-4 max-w-lg text-neutral-200">
-        Holy Angel University Student Assistant
-        <span className="text-neutral-300"> July 2023 – Current</span>
+        <p className="font-bold">Holy Angel University</p>Student Assistant <br />
+        <span className="text-neutral-300"> July 2023 – November 2024</span>
+        <br /> 
         <br />
-        As a student assistant at Holy Angel University, I&apos;ve contributed
-        to various administrative tasks, demonstrating reliability and teamwork.
-        <br />
-        <br />
-        Ninjafox Engineering Product Assistant - R&D, 3D Printing, E-Commerce
-        Website (Shopify)
+        <p className="font-bold">Ninjafox Engineering</p> Product Assistant - R&D, 3D Printing, E-Commerce
+        Website (Shopify) <br />
         <span className="text-neutral-300"> June 2022 – April 2023</span>
         <br />
-        At Ninjafox Engineering, I played a pivotal role in research and
-        development, particularly in the field of 3D printing. Additionally, I
-        assisted in setting up and managing an e-commerce website on the Shopify
-        platform.
       </p>
     </div>
   );
@@ -225,12 +218,11 @@ const SkeletonSix = () => {
       <p className="font-bold text-4xl text-white">Certifications</p>
       <p className="font-normal text-base text-white"></p>
       <p className="font-normal text-base my-4 max-w-lg text-neutral-200">
-        CERTIFICATIONS
         <br />
-        CompTIA IT Fundamentals (ITF+){" "}
+        <p className="font-bold">CompTIA IT Fundamentals (ITF+){" "}</p>
         <span className="text-neutral-300">November 24, 2023</span>
-        <br />
-        CCNAv7: Enterprise Networking, Security, and Automation{" "}
+        <br /><br/>
+        <p className="font-bold">CCNAv7: Enterprise Networking, Security, and Automation{" "}</p>
         <span className="text-neutral-300">August 08, 2023</span>
       </p>
     </div>
@@ -243,12 +235,10 @@ const SkeletonSeven = () => {
       <p className="font-bold text-4xl text-white">Education</p>
       <p className="font-normal text-base text-white"></p>
       <p className="font-normal text-base my-4 max-w-lg text-neutral-200">
-        **Holy Angel University**
-        <br />
+      <p className="font-bold">Holy Angel University</p>
         1 Holy Angel St, Angeles, 2009 Pampanga
-        <br />
-        College Undergraduate (On Going) – BS Computer Engineering, 1st and 2nd Semester
-        President Lister – S.Y 2021-2022
+        <br /><br />
+        <p className="font-bold">Bachelor of Science in Computer Engineering</p> 2021 - 2025
       </p>
     </div>
   );
