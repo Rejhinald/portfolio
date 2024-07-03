@@ -202,7 +202,7 @@ const cards = [
     content: <SkeletonFour />,
     className: "col-span-1",
     thumbnail:
-      "https://i.ibb.co/Fb4tvyB/123-design.png",
+      "https://i.ibb.co/f4qxMXD/Untitled-design-1.png",
   },
   {
     id: 5,
