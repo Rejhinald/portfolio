@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/utils/cn";
 import Image from "next/image";
@@ -15,15 +15,18 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
   const [selected, setSelected] = useState<Card | null>(null);
   const [lastSelected, setLastSelected] = useState<Card | null>(null);
 
-  const handleClick = (card: Card) => {
-    setLastSelected(selected);
-    setSelected(card);
-  };
+  const handleClick = useCallback(
+    (card: Card) => {
+      setLastSelected(selected);
+      setSelected(card);
+    },
+    [selected]
+  );
 
-  const handleOutsideClick = () => {
+  const handleOutsideClick = useCallback(() => {
     setLastSelected(selected);
     setSelected(null);
-  };
+  }, [selected]);
 
   return (
     <div className="w-full h-full p-10 grid grid-cols-1 md:grid-cols-3 max-w-7xl mx-auto gap-4 relative">
@@ -42,8 +45,8 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
             )}
             layout
           >
-            {selected?.id === card.id && <SelectedCard selected={selected} />}
-            <BlurImage card={card} />
+            {selected?.id === card.id && <SelectedCardMemo selected={selected} />}
+            <BlurImageMemo card={card} />
           </motion.div>
         </div>
       ))}
@@ -64,8 +67,9 @@ const BlurImage = ({ card }: { card: Card }) => {
   return (
     <Image
       src={card.thumbnail}
-      height="500"
-      width="500"
+      height={500}
+      width={500}
+      loading="lazy"
       onLoad={() => setLoaded(true)}
       className={cn(
         "object-cover object-top absolute inset-0 h-full w-full transition duration-200",
@@ -80,27 +84,14 @@ const SelectedCard = ({ selected }: { selected: Card | null }) => {
   return (
     <div className="bg-transparent h-full w-full flex flex-col justify-end rounded-lg shadow-2xl relative z-[60]">
       <motion.div
-        initial={{
-          opacity: 0,
-        }}
-        animate={{
-          opacity: 0.6,
-        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.6 }}
         className="absolute inset-0 h-full w-full bg-black opacity-60 z-10"
       />
       <motion.div
-        initial={{
-          opacity: 0,
-          y: 100,
-        }}
-        animate={{
-          opacity: 1,
-          y: 0,
-        }}
-        transition={{
-          duration: 0.3,
-          ease: "easeInOut",
-        }}
+        initial={{ opacity: 0, y: 100 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
         className="relative px-8 pb-4 z-[70]"
       >
         {selected?.content}
@@ -108,3 +99,6 @@ const SelectedCard = ({ selected }: { selected: Card | null }) => {
     </div>
   );
 };
+
+const BlurImageMemo = React.memo(BlurImage);
+const SelectedCardMemo = React.memo(SelectedCard);
