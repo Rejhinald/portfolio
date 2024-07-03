@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@popperjs/core": "^2.11.8",
     "clsx": "^2.1.1",
     "framer-motion": "^11.2.12",
     "gsap": "^3.12.5",

@@ -2,6 +2,18 @@
 import React, { useState, useRef, useEffect } from "react";
 import { LayoutGrid } from "@/components/ui/layout-grid";
 import { BackgroundBeams } from "@/components/ui/background-beams"; 
+import Image from 'next/image';
+import djangoIcon from '@/components/images/icons/django-icon.svg';
+import javascriptIcon from '@/components/images/icons/javascript.svg';
+import nextjsIcon from '@/components/images/icons/nextjs-icon.svg';
+import postgresqlIcon from '@/components/images/icons/postgresql.svg';
+import pythonIcon from '@/components/images/icons/python.svg';
+import reactIcon from '@/components/images/icons/react.svg';
+import shadcnIcon from '@/components/images/icons/shadcn-ui-seeklogo.svg';
+import tailwindcssIcon from '@/components/images/icons/tailwindcss-icon.svg';
+import typescriptIcon from '@/components/images/icons/typescript-icon.svg';
+
+
 
 export function LayoutGridDemo() {
   return (
@@ -17,12 +29,67 @@ export function LayoutGridDemo() {
 const SkeletonOne = () => {
   return (
     <div>
-      <p className="font-bold text-4xl text-white">Programming Languages</p>
+      <p className="font-bold text-4xl text-white">Technologies</p>
       <p className="font-normal text-base text-white"></p>
-      <p className="font-normal text-base my-4 max-w-lg text-neutral-200">
-        A serene and tranquil retreat, this house in the woods offers a peaceful
-        escape from the hustle and bustle of city life.
+      <p className="font-normal text-base my-4 max-w-lg text-neutral-200 pb-5">
+        These are the technologies that I have used so far in my career.
       </p>
+      <div className="flex flex-wrap gap-10 justify-center items-center">
+        <div className="relative group">
+          <Image src={javascriptIcon} alt="JavaScript Icon" width={50} height={50} className="shadow-md" />
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
+            JavaScript
+          </div>
+        </div>
+        <div className="relative group">
+          <Image src={typescriptIcon} alt="TypeScript Icon" width={50} height={50} className="shadow-md" />
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
+            TypeScript
+          </div>
+        </div>
+        <div className="relative group">
+          <Image src={reactIcon} alt="React Icon" width={50} height={50} className="shadow-md" />
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
+            React
+          </div>
+        </div>
+        <div className="relative group">
+          <Image src={nextjsIcon} alt="Next.js Icon" width={50} height={50} className="shadow-md" />
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
+            Next.js
+          </div>
+        </div>
+        <div className="relative group">
+          <Image src={shadcnIcon} alt="shadcn Icon" width={50} height={50} className="shadow-md" />
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
+            shadcn
+          </div>
+        </div>
+        <div className="relative group">
+          <Image src={tailwindcssIcon} alt="Tailwind CSS Icon" width={50} height={50} className="shadow-md" />
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
+            Tailwind CSS
+          </div>
+        </div>
+        <div className="relative group">
+          <Image src={pythonIcon} alt="Python Icon" width={50} height={50} className="shadow-md" />
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
+            Python
+          </div>
+        </div>
+        <div className="relative group">
+          <Image src={postgresqlIcon} alt="PostgreSQL Icon" width={50} height={50} className="shadow-md" />
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
+            PostgreSQL
+          </div>
+        </div>
+        <div className="relative group">
+          <Image src={djangoIcon} alt="Django Icon" width={50} height={50} className="shadow-md" />
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
+            Django
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -70,7 +137,7 @@ const SkeletonFour = () => {
 const SkeletonFive = () => {
   return (
     <div>
-      <p className="font-bold text-4xl text-white">House in the woods</p>
+      <p className="font-bold text-4xl text-white">Work Experience</p>
       <p className="font-normal text-base text-white"></p>
       <p className="font-normal text-base my-4 max-w-lg text-neutral-200">
         A serene and tranquil retreat, this house in the woods offers a peaceful
@@ -83,7 +150,7 @@ const SkeletonFive = () => {
 const SkeletonSix = () => {
   return (
     <div>
-      <p className="font-bold text-4xl text-white">House above the clouds</p>
+      <p className="font-bold text-4xl text-white">Certifications</p>
       <p className="font-normal text-base text-white"></p>
       <p className="font-normal text-base my-4 max-w-lg text-neutral-200">
         Perched high above the world, this house offers breathtaking views and a
@@ -128,7 +195,7 @@ const cards = [
     content: <SkeletonThree />,
     className: "col-span-1",
     thumbnail:
-      "https://i.ibb.co/BKRR71f/skills-employers-want-png.webp",
+      "https://i.ibb.co/vvgPVTW/istockphoto-1490859962-612x612.jpg",
   },
   {
     id: 4,
@@ -142,14 +209,14 @@ const cards = [
     content: <SkeletonFive />,
     className: "col-span-1",
     thumbnail:
-      "https://images.unsplash.com/photo-1475070929565-c985b496cb9f?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "https://i.ibb.co/8BFXgZk/workplace-with-laptop-cup-coffee-smartphone-table-office.jpg",
   },
   {
     id: 6,
     content: <SkeletonSix />,
     className: "col-span-1",
     thumbnail:
-      "https://images.unsplash.com/photo-1476231682828-37e571bc172f?q=80&w=3474&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "https://i.ibb.co/p2HtwWY/businessman-take-assessment-certificate-questionnaire-600nw-2245618595.jpg",
   },
   {
     id: 7,
