@@ -1,11 +1,15 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import { LayoutGrid } from "@/components/ui/layout-grid";
+import { BackgroundBeams } from "@/components/ui/background-beams"; 
 
 export function LayoutGridDemo() {
   return (
-    <div className="h-screen py-20 w-full bg-slate-950">
+    <div className="h-screen py-20 w-full bg-slate-950 relative z-10">
       <LayoutGrid cards={cards} />
+      <div className="absolute inset-0 -z-10">
+        <BackgroundBeams />
+        </div>
     </div>
   );
 }
@@ -131,7 +135,7 @@ const cards = [
     content: <SkeletonFour />,
     className: "col-span-1",
     thumbnail:
-      "https://i.ibb.co/wrQLCKR/123-design.png",
+      "https://i.ibb.co/Fb4tvyB/123-design.png",
   },
   {
     id: 5,

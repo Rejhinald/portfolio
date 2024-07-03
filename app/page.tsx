@@ -3,7 +3,7 @@ import { LampDemo } from '@/components/lamp'
 
 export default function page() {
   return (
-    <div>
+    <div className='h-screen'>
       <LampDemo />
     </div>
   )
