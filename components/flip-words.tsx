@@ -8,7 +8,7 @@ export function FlipWordsDemo() {
 
   return (
     <div>
-      <div className="mt-8 bg-gradient-to-br from-slate-300 to-slate-500 py-4 bg-clip-text text-center text-3xl font-medium tracking-tight md:text-7xl"> {/* Changed text-transparent to text-gray-400 */}
+      <div className="mt-8 bg-gradient-to-br from-slate-300 to-slate-500 py-4 bg-clip-text text-center text-3xl font-medium tracking-tight md:text-7xl text-gray-400 dark:text-gray-400">
         I am {name}, <br />
         I am {article}<FlipWords words={words} setArticle={setArticle} />
       </div>

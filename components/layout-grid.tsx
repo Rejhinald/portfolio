@@ -13,7 +13,12 @@ import shadcnIcon from "@/components/images/icons/shadcn-ui-seeklogo.svg";
 import tailwindcssIcon from "@/components/images/icons/tailwindcss-icon.svg";
 import typescriptIcon from "@/components/images/icons/typescript-icon.svg";
 
-// TO DO: DIRECTION AWARE HOVER ON IMAGES, THEN ANIMATED TOOLTIPS TO ICONS
+// TO DO: ANIMATED ENTRY TO IMAGES, DIRECTION AWARE HOVER ON IMAGES, WOBBLE EFFECT ON IMAGES, THEN ANIMATED TOOLTIPS TO ICONS
+// OPTIMIZATION: MOVE ALL DATA TO DATA.JS FILES
+
+
+// ADD: SOCIAL ICONS TO SELF
+
 
 export function LayoutGridDemo() {
   return (
@@ -34,7 +39,7 @@ const SkeletonOne = () => {
       <p className="font-normal text-base my-4 max-w-lg text-neutral-200 pb-5">
         These are the technologies that I have used so far in my career.
       </p>
-      <div className="flex flex-wrap gap-10 justify-center items-center">
+      <div className="flex flex-wrap gap-4 justify-center items-center">
         <div className="relative group">
           <Image
             src={javascriptIcon}
@@ -147,6 +152,9 @@ const SkeletonOne = () => {
     </div>
   );
 };
+
+export default SkeletonOne;
+
 
 const SkeletonTwo = () => {
   return (
