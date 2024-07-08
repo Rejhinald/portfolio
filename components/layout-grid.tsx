@@ -13,7 +13,7 @@ import shadcnIcon from "@/components/images/icons/shadcn-ui-seeklogo.svg";
 import tailwindcssIcon from "@/components/images/icons/tailwindcss-icon.svg";
 import typescriptIcon from "@/components/images/icons/typescript-icon.svg";
 
-// TO DO: ANIMATED ENTRY TO IMAGES, DIRECTION AWARE HOVER ON IMAGES, WOBBLE EFFECT ON IMAGES, THEN ANIMATED TOOLTIPS TO ICONS
+// TO DO: ANIMATED ENTRY TO IMAGES, DIRECTION AWARE HOVER ON IMAGES, WOBBLE EFFECT ON IMAGES, THEN ANIMATED TOOLTIPS TO ICONS, MOUSE ICON ON HOVER
 // OPTIMIZATION: MOVE ALL DATA TO DATA.JS FILES
 
 
