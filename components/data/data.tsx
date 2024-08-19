@@ -139,7 +139,7 @@ export const SkeletonThree = () => (
     <p className="font-bold text-4xl text-white">Skills</p>
     <p className="font-normal text-base text-white"></p>
     <p className="font-normal text-base my-4 max-w-lg text-neutral-200">
-      As a BS Computer Engineering major, I&apos;ve honed a diverse set of
+      As a BS Computer Engineering major, other than programming, I&apos;ve honed a diverse set of
       skills. In the technical realm, I excel in Routing and Switching, Logic
       Circuits and Design, Computer Building, and 3D Printing. My creative side
       shines through Graphic Designing, where I craft visually appealing
@@ -154,8 +154,7 @@ export const SkeletonFour = () => (
       <p className="font-bold text-4xl text-white">Arwin Miclat</p>
       <p className="font-normal text-base text-white"></p>
       <p className="font-normal text-base my-4 max-w-lg text-neutral-200">
-        A fourth year Computer Engineering student at Holy Angel University. I am
-        21 years old and I am from the Philippines.
+        Hi, I&apos;m Arwin Miclat, your hardworking and dedicated Computer Engineering student. I believe that If I love to do something, I will focus on it until I am satisfied. I am passionate about technology and I am always eager to learn new things. I am a team player and I am always willing to help others. I am a fast learner and I am always open to new ideas. I am a responsible and reliable person and I always make sure to finish my tasks on time. I am a creative person and I always try to think outside the box. I am a good communicator and I always make sure to keep everyone in the loop. I am a problem solver and I always make sure to find solutions to any problems that may arise. I am a positive person and I always try to keep a positive attitude no matter what. I am a hardworking person and I always make sure to give my best in everything that I do.
       </p>
       <p className="font-bold text-base text-white">Socials</p>
       <div className="flex flex-wrap gap-1 justify-around items-center">
