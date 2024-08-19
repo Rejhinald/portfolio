@@ -154,7 +154,7 @@ export const SkeletonFour = () => (
       <p className="font-bold text-4xl text-white">Arwin Miclat</p>
       <p className="font-normal text-base text-white"></p>
       <p className="font-normal text-base my-4 max-w-lg text-neutral-200">
-        Hi, I&apos;m Arwin Miclat, your hardworking and dedicated Computer Engineering student. I believe that If I love to do something, I will focus on it until I am satisfied. I am passionate about technology and I am always eager to learn new things. I am a fast learner and I am always open to new ideas.  I am a problem solver and I always make sure to find solutions to any problems that may arise. I am a positive person and I always try to keep a positive attitude no matter what. Lastly, I am a hardworking person and I always make sure to give my best in everything that I do.
+      Hi, I&apos;m Arwin Miclat, a dedicated Computer Engineering student with a passion for technology. I&apos;m driven by a love for learning and a commitment to seeing things through. I&apos;m a fast learner, always eager to embrace new ideas and solve problems. I approach challenges with a positive attitude and a strong work ethic, ensuring that I give my best in everything I do.
       </p>
       <p className="font-bold text-base text-white">Socials</p>
       <div className="flex flex-wrap gap-1 justify-around items-center">
