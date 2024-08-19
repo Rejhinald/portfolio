@@ -36,14 +36,19 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
             onClick={() => handleClick(card)}
             className={cn(
               card.className,
-              "relative overflow-hidden",
+              "relative overflow-hidden cursor-pointer", // Added cursor-pointer here
               selected?.id === card.id
-                ? "rounded-lg cursor-pointer absolute inset-0 h-1/2 w-full md:w-1/2 m-auto z-50 flex justify-center items-center flex-wrap flex-col bg-slate-950"
+                ? "rounded-lg absolute inset-0 h-1/2 w-full md:w-1/2 m-auto z-50 flex justify-center items-center flex-wrap flex-col bg-slate-950"
                 : lastSelected?.id === card.id
                 ? "z-40 bg-slate-950 rounded-xl h-full w-full"
                 : "bg-slate-950 rounded-xl h-full w-full"
             )}
             layout
+            whileHover={{
+              scale: 1.05,
+              transition: { duration: 0.1 },
+            }}
+            whileTap={{ scale: 0.95 }}
           >
             {selected?.id === card.id && <SelectedCardMemo selected={selected} />}
             <BlurImageMemo card={card} />

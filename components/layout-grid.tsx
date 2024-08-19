@@ -12,6 +12,8 @@ import reactIcon from "@/components/images/icons/react.svg";
 import shadcnIcon from "@/components/images/icons/shadcn-ui-seeklogo.svg";
 import tailwindcssIcon from "@/components/images/icons/tailwindcss-icon.svg";
 import typescriptIcon from "@/components/images/icons/typescript-icon.svg";
+import { AnimatedTooltip } from "@/components/ui/animated-tooltip"; // Import the AnimatedTooltip component
+
 
 // TO DO: ANIMATED ENTRY TO IMAGES, DIRECTION AWARE HOVER ON IMAGES, WOBBLE EFFECT ON IMAGES, THEN ANIMATED TOOLTIPS TO ICONS, MOUSE ICON ON HOVER
 // OPTIMIZATION: MOVE ALL DATA TO DATA.JS FILES
@@ -32,122 +34,72 @@ export function LayoutGridDemo() {
 }
 
 const SkeletonOne = () => {
+  const technologyItems = [
+    {
+      id: 1,
+      name: "JavaScript",
+      designation: "Programming Language",
+      image: javascriptIcon,
+    },
+    {
+      id: 2,
+      name: "TypeScript",
+      designation: "Programming Language",
+      image: typescriptIcon,
+    },
+    {
+      id: 3,
+      name: "React",
+      designation: "JavaScript Library",
+      image: reactIcon,
+    },
+    {
+      id: 4,
+      name: "Next.js",
+      designation: "React Framework",
+      image: nextjsIcon,
+    },
+    {
+      id: 5,
+      name: "shadcn",
+      designation: "UI Library",
+      image: shadcnIcon,
+    },
+    {
+      id: 6,
+      name: "Tailwind CSS",
+      designation: "CSS Framework",
+      image: tailwindcssIcon,
+    },
+    {
+      id: 7,
+      name: "Python",
+      designation: "Programming Language",
+      image: pythonIcon,
+    },
+    {
+      id: 8,
+      name: "PostgreSQL",
+      designation: "Database",
+      image: postgresqlIcon,
+    },
+    {
+      id: 9,
+      name: "Django",
+      designation: "Web Framework",
+      image: djangoIcon,
+    },
+  ];
+
   return (
     <div>
       <p className="font-bold text-4xl text-white">Technologies</p>
       <p className="font-normal text-base text-white"></p>
-      <p className="font-normal text-base my-4 max-w-lg text-neutral-200 pb-5">
+      <p className="font-normal text-base my-4 max-w-lg text-neutral-200 pb-1">
         These are the technologies that I have used so far in my career.
       </p>
       <div className="flex flex-wrap gap-4 justify-center items-center">
-        <div className="relative group">
-          <Image
-            src={javascriptIcon}
-            alt="JavaScript Icon"
-            width={50}
-            height={50}
-            className="shadow-md"
-          />
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
-            JavaScript
-          </div>
-        </div>
-        <div className="relative group">
-          <Image
-            src={typescriptIcon}
-            alt="TypeScript Icon"
-            width={50}
-            height={50}
-            className="shadow-md"
-          />
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
-            TypeScript
-          </div>
-        </div>
-        <div className="relative group">
-          <Image
-            src={reactIcon}
-            alt="React Icon"
-            width={50}
-            height={50}
-            className="shadow-md"
-          />
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
-            React
-          </div>
-        </div>
-        <div className="relative group">
-          <Image
-            src={nextjsIcon}
-            alt="Next.js Icon"
-            width={50}
-            height={50}
-            className="shadow-md"
-          />
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
-            Next.js
-          </div>
-        </div>
-        <div className="relative group">
-          <Image
-            src={shadcnIcon}
-            alt="shadcn Icon"
-            width={50}
-            height={50}
-            className="shadow-md"
-          />
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
-            shadcn
-          </div>
-        </div>
-        <div className="relative group">
-          <Image
-            src={tailwindcssIcon}
-            alt="Tailwind CSS Icon"
-            width={50}
-            height={50}
-            className="shadow-md"
-          />
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
-            Tailwind CSS
-          </div>
-        </div>
-        <div className="relative group">
-          <Image
-            src={pythonIcon}
-            alt="Python Icon"
-            width={50}
-            height={50}
-            className="shadow-md"
-          />
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
-            Python
-          </div>
-        </div>
-        <div className="relative group">
-          <Image
-            src={postgresqlIcon}
-            alt="PostgreSQL Icon"
-            width={50}
-            height={50}
-            className="shadow-md"
-          />
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
-            PostgreSQL
-          </div>
-        </div>
-        <div className="relative group">
-          <Image
-            src={djangoIcon}
-            alt="Django Icon"
-            width={50}
-            height={50}
-            className="shadow-md"
-          />
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">
-            Django
-          </div>
-        </div>
+        <AnimatedTooltip items={technologyItems} />
       </div>
     </div>
   );
