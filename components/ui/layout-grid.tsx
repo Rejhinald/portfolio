@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useCallback } from "react";
-import { motion } from "framer-motion";
 import { cn } from "@/utils/cn";
 import Image from "next/image";
+import { motion } from "framer-motion";
 
 type Card = {
   id: number;

@@ -21,6 +21,7 @@ export const FlipWords = ({
     return ["a", "e", "i", "o", "u"].includes(char.toLowerCase());
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const updateArticle = (word: string) => {
     setArticle(isVowel(word[0]) ? "an" : "a");
   };
@@ -30,7 +31,7 @@ export const FlipWords = ({
     setCurrentWord(word);
     setIsAnimating(true);
     updateArticle(word);
-  }, [currentWord, words]);
+  }, [currentWord, updateArticle, words]);
 
   useEffect(() => {
     if (!isAnimating)
