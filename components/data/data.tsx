@@ -16,6 +16,7 @@ import instagramIcon from "@/components/images/icons/instagram-icon.svg";
 import { AnimatedTooltip } from "@/components/ui/animated-tooltip";
 import React from "react";
 
+
 export const technologyItems = [
   {
     id: 1,
@@ -225,6 +226,7 @@ export const SkeletonSeven = () => (
     </p>
   </div>
 );
+
 
 export const cards = [
   {

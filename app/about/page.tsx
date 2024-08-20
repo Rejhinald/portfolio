@@ -1,6 +1,5 @@
 import React from 'react'
 import { LayoutGridDemo } from '@/components/layout-grid'
-import { BackgroundBeams } from "@/components/ui/background-beams";
 
 export default function page() {
   return (
