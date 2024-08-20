@@ -1,4 +1,8 @@
 // components/ProjectsDemo.js
+
+// TO DO: LOOPING VIDEOS, ADDING VIDEOS (RECORD), ADD ACTUAL PROJECTS, ADD MORE GIMMICKS (ANIMATED SCROLL FROM ACETERNITY),  fix weird bug on google.
+
+
 "use client";
 import { motion } from "framer-motion";
 import { FaGithub, FaLink } from "react-icons/fa";
