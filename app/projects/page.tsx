@@ -2,13 +2,11 @@
 import React from "react";
 import { ProjectsDemo } from "@/components/projects";
 import { BackgroundBeams } from "@/components/ui/background-beams";
-export default function BackgroundBeamsDemo() {
+
+export default function page() {
   return (
       <div>
-      <div>
-        <ProjectsDemo />
-      </div>
-      <BackgroundBeams />
+ <ProjectsDemo />
       </div>
   );
 }

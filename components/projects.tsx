@@ -1,11 +1,8 @@
-// components/ProjectsDemo.js
-
-// TO DO: LOOPING VIDEOS, ADDING VIDEOS (RECORD), ADD ACTUAL PROJECTS, ADD MORE GIMMICKS (ANIMATED SCROLL FROM ACETERNITY),  fix weird bug on google.
-
-
 "use client";
 import { motion } from "framer-motion";
 import { FaGithub, FaLink } from "react-icons/fa";
+import { BackgroundBeams } from "@/components/ui/background-beams";
+import { TracingBeam } from "@/components/ui/tracing-beam";
 
 const projects = [
   {
@@ -54,8 +51,16 @@ const fadeInFromLeft = {
 
 export function ProjectsDemo() {
   return (
-    <section className="bg-gray-900 text-white min-h-screen py-12 px-4">
-      <div className="container max-w-screen-lg mx-auto pt-24 space-y-8">
+    <section className="relative min-h-screen py-12 px-4 bg-gray-900">
+      {/* BackgroundBeams with bg-gray-900 */}
+      <div className="absolute inset-0 z-0 bg-gray-900">
+        <BackgroundBeams />
+      </div>
+
+      {/* TracingBeam Component */}
+      <TracingBeam />
+
+      <div className="relative z-10 container max-w-screen-lg mx-auto pt-24 space-y-8 text-white">
         {projects.map((project) => (
           <motion.div
             key={project.id}
@@ -84,7 +89,9 @@ export function ProjectsDemo() {
               whileHover={{ scale: 1.05 }}
               className="bg-gray-800 rounded-lg p-6 shadow-lg flex flex-col"
             >
-              <h3 className="text-2xl font-bold mb-2">{project.title}</h3>
+              <h3 className="text-2xl font-bold mb-2 text-white">
+                {project.title}
+              </h3>
               <p className="text-gray-400 mb-4">
                 {project.description ||
                   "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam."}
