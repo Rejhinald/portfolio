@@ -7,33 +7,53 @@ import { TracingBeam } from "@/components/ui/tracing-beam";
 const projects = [
   {
     id: 1,
-    title: "Shadcn Landing Page",
+    title: "Delivio",
     description:
-      "Landing page with essential sections to promote a particular product, service, event, or offer. It is fully responsive, customizable, has dark mode, meta tags and user-friendly interface.",
-    techStack: ["React", "TypeScript", "Shadcn", "Tailwind"],
-    liveLink: "#",
-    githubLink: "#",
-    videoSrc: "https://www.youtube.com/embed/bKXlBtf8m7A?autoplay=1",
+      "Delivio is a revolutionary web application designed to empower freelance truckers and businesses to connect and manage freight deliveries seamlessly. Built with cutting-edge technologies like Next.js for a smooth user experience and Supabase for a robust and scalable database, Delivio offers a one-stop solution for streamlining the freight delivery.",
+    techStack: ["NextJS", "TypeScript", "Shadcn", "Tailwind", "Supabase", "2024"],
+    liveLink: "https://delivio-web.vercel.app/",
+    githubLink: "https://github.com/naigggs/delivio-web",
+    videoSrc: "https://www.youtube.com/embed/5vGs2aWqKrI?autoplay=1&version=3&loop=1&playlist=5vGs2aWqKrI",
   },
   {
     id: 2,
-    title: "Magenta Kitchen",
+    title: "Poem.io",
     description:
-      "Restaurant menu created with the purpose to have an elegant digital menu, with the capability to use it with QR code and show the elemental restaurant information and all the dishes available.",
-    techStack: ["React", "Next.js", "CSS Modules", "Antd"],
+      "Gemini API AI Poem generator that includes the mood of the poem being generated. Made with NextJS, Material UI, Python, and TailwindCSS",
+    techStack: ["NextJS", "Tailwind CSS", "Material UI", "Python", "2024"],
     liveLink: "#",
-    githubLink: "#",
-    videoSrc: "https://www.youtube.com/embed/bKXlBtf8m7A?autoplay=1",
+    githubLink: "https://github.com/Rejhinald/poem.io",
+    videoSrc: "https://www.youtube.com/embed/LRmx_WcMLbA?autoplay=1&version=3&loop=1&playlist=LRmx_WcMLbA",
   },
   {
     id: 3,
-    title: "Magenta Kitchen",
+    title: "Spotify Clone",
     description:
-      "Restaurant menu created with the purpose to have an elegant digital menu, with the capability to use it with QR code and show the elemental restaurant information and all the dishes available.",
-    techStack: ["React", "Next.js", "CSS Modules", "Antd"],
+      "A Spotify clone built with Django, featuring user authentication, playlist creation, and music streaming. The interface is crafted using HTML/CSS, offering a seamless music experience with Django-powered backend functionality.",
+    techStack: ["Python", "Django", "CSS", "HTML", "2023"],
     liveLink: "#",
     githubLink: "#",
-    videoSrc: "https://www.youtube.com/embed/bKXlBtf8m7A?autoplay=1",
+    videoSrc: "https://www.youtube.com/embed/ohxN__j_FE8?autoplay=1&version=3&loop=1&playlist=ohxN__j_FE8",
+  },
+  {
+    id: 4,
+    title: "Hotel Management System",
+    description:
+      "A Hotel Management System built with Django, featuring user authentication, Booking, Active Bookings, Approve payments, and Admin Panels. The interface is crafted using HTML/CSS, offering a seamless music experience with Django-powered backend functionality.",
+    techStack: ["Python", "Django", "CSS", "HTML", "2023"],
+    liveLink: "#",
+    githubLink: "#",
+    videoSrc: "https://www.youtube.com/embed/Is2sRA3_Tp4?autoplay=1&version=3&loop=1&playlist=Is2sRA3_Tp4",
+  },
+  {
+    id: 5,
+    title: "San Luis Tourism",
+    description:
+      "This HTML, CSS page is created under the SOFTDEV1 subject as a 3rd year Computer Engineering Student. This page showcases the possible tourism spots in San Luis, Pampanga, Philippines.",
+    techStack: ["HTML", "CSS", "2023"],
+    liveLink: "https://rejhinald.github.io/sanluistourism/",
+    githubLink: "https://github.com/Rejhinald/sanluistourism",
+    videoSrc: "https://www.youtube.com/embed/a8ye7j-tTkY?autoplay=1&version=3&loop=1&playlist=a8ye7j-tTkY",
   },
 ];
 
@@ -81,6 +101,7 @@ export function ProjectsDemo() {
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
+                
               ></iframe>
             </motion.div>
 
