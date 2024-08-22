@@ -7,7 +7,7 @@ import Image from "next/image";
 import { Mail } from "lucide-react";
 import githubIcon from "@/components/images/icons/github-icon.svg";
 import linkedinIcon from "@/components/images/icons/linkedin-icon.svg";
-
+// ADDED VERCEL ENVIRONMENT VARIABLES
 export function Contact() {
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
   const [status, setStatus] = useState("");
