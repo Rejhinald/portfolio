@@ -4,6 +4,8 @@ import "./globals.css";
 import { NavbarDemo } from "@/components/navbar-menu";
 const inter = Inter({ subsets: ["latin"] });
 
+// FIX THE LAYOUT TO MAKE EVERY PAGE RESPONSIVE TO DIMENSIONS
+
 export const metadata: Metadata = {
   title: "Arwin Miclat - Portfolio",
   description: "Portfolio of Arwin Miclat, a Compunter engineer based in the Philippines.",
