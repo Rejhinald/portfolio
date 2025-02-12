@@ -71,24 +71,38 @@ export const FlipWords = ({
           position: "absolute",
         }}
         className={cn(
-          "z-10 inline-block relative text-left tracking-light px-4 text-gray-400", // Updated to gray-ish color
+          "z-10 inline-block relative text-left tracking-light px-4 text-gray-400",
           className
         )}
         key={currentWord}
       >
-        {currentWord.split("").map((letter, index) => (
-          <motion.span
-            key={currentWord + index}
-            initial={{ opacity: 0, y: 10, filter: "blur(8px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{
-              delay: index * 0.08,
-              duration: 0.4,
-            }}
-            className="inline-block"
-          >
-            {letter}
-          </motion.span>
+        {currentWord.split(" ").map((word, wordIndex) => (
+          <React.Fragment key={`word-${wordIndex}`}>
+            {wordIndex > 0 && (
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4 }}
+                className="inline-block"
+              >
+                &nbsp;
+              </motion.span>
+            )}
+            {word.split("").map((letter, letterIndex) => (
+              <motion.span
+                key={`${word}-${letterIndex}`}
+                initial={{ opacity: 0, y: 10, filter: "blur(8px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                transition={{
+                  delay: (wordIndex * word.length + letterIndex) * 0.08,
+                  duration: 0.4,
+                }}
+                className="inline-block"
+              >
+                {letter}
+              </motion.span>
+            ))}
+          </React.Fragment>
         ))}
       </motion.div>
     </AnimatePresence>

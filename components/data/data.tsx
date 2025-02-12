@@ -174,23 +174,30 @@ export const SkeletonFour = () => (
     </div>
   );
 
-export const SkeletonFive = () => (
-  <div>
-    <p className="font-bold text-4xl text-white">Work Experience</p>
-    <p className="font-normal text-base text-white"></p>
-    <p className="font-normal text-base my-4 max-w-lg text-neutral-200">
-      <p className="font-bold">Holy Angel University</p>Student Assistant{" "}
-      <br />
-      <span className="text-neutral-300"> July 2023 – November 2024</span>
-      <br />
-      <br />
-      <p className="font-bold">Ninjafox Engineering</p> Product Assistant - R&D,
-      3D Printing, E-Commerce Website (Shopify) <br />
-      <span className="text-neutral-300"> June 2022 – April 2023</span>
-      <br />
-    </p>
-  </div>
-);
+  export const SkeletonFive = () => (
+    <div>
+      <p className="font-bold text-4xl text-white">Work Experience</p>
+      <p className="font-normal text-base text-white"></p>
+      <p className="font-normal text-base my-4 max-w-lg text-neutral-200">
+        <p className="font-bold">Hooli Software</p>
+        Software Engineer Intern{" "}
+        <br />
+        <span className="text-neutral-300">November 2024 – February 2025</span>
+        <br />
+        <br />
+        <p className="font-bold">Holy Angel University</p>
+        Student Assistant{" "}
+        <br />
+        <span className="text-neutral-300">July 2023 – November 2024</span>
+        <br />
+        <br />
+        <p className="font-bold">Ninjafox Engineering</p> 
+        Product Assistant - R&D, 3D Printing, E-Commerce Website (Shopify) <br />
+        <span className="text-neutral-300">June 2022 – April 2023</span>
+        <br />
+      </p>
+    </div>
+  );
 
 export const SkeletonSix = () => (
   <div>
