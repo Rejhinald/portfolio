@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { FlipWords } from "./ui/flip-words";
 
 export function FlipWordsDemo() {
-  const words = ["student", "programmer", "achiever", "explorer"];
+  const words = ["Computer Engineer", "Web Developer"];
   const name = "Arwin Miclat";
   const [article, setArticle] = useState("a");
 
