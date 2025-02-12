@@ -1,80 +1,45 @@
 import gsap from "gsap";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
-// Cache banner elements to avoid repeated DOM queries
-let banners: (HTMLElement | null)[] = [];
-
-// Initialize banners once
-const initBanners = () => {
-  if (banners.length === 0) {
-    banners = [
-      document.getElementById("banner-1"),
-      document.getElementById("banner-2"),
-      document.getElementById("banner-3"),
-      document.getElementById("banner-4"),
-    ];
-  }
-  return banners.every(banner => banner !== null);
-};
-
-// Constants for colors and animation settings
-const COLORS = {
-  initial: "rgb(18, 32, 47)",
-  final: "rgb(15, 23, 42)",
-  transition: "rgb(0, 111, 184)"
-} as const;
-
-const ANIMATION_CONFIG = {
-  duration: 0.5,
-  ease: "power2.inOut",
-  stagger: 0.1, // Reduced stagger time for snappier animation
-  force3D: true, // Enable hardware acceleration
-} as const;
-
 export const animatePageIn = () => {
-  if (!initBanners()) return;
+    const bannerOne = document.getElementById("banner-1");
+    const bannerTwo = document.getElementById("banner-2");
+    const bannerThree = document.getElementById("banner-3");
+    const bannerFour = document.getElementById("banner-4");
 
-  // Kill any existing tweens to prevent animation conflicts
-  gsap.killTweensOf(banners);
+    if (bannerOne && bannerTwo && bannerThree && bannerFour) {
+        const tl = gsap.timeline();
 
-  gsap.timeline({
-    defaults: ANIMATION_CONFIG,
-  })
-    .set(banners, {
-      yPercent: 0,
-      backgroundColor: COLORS.initial,
-      immediateRender: true, // Ensures immediate rendering of first frame
-    })
-    .to(banners, {
-      yPercent: 100,
-      backgroundColor: COLORS.final,
-      clearProps: "transform", // Clear transform after animation
-    });
+        tl.set([bannerOne, bannerTwo, bannerThree, bannerFour], {
+            yPercent: 0,
+            backgroundColor: "rgb(18, 32, 47)", // Update to match your palette
+        }).to([bannerOne, bannerTwo, bannerThree, bannerFour], {
+            yPercent: 100,
+            stagger: 0.2,
+            backgroundColor: "rgb(15, 23, 42)", // Update to match bg-slate-950
+        });
+    }
 };
 
-export const animatePageOut = (href: string, router: AppRouterInstance) => {
-  if (!initBanners()) return;
+export const animatePageOut = (href: string, router: any[] | AppRouterInstance) => {
+    const bannerOne = document.getElementById("banner-1");
+    const bannerTwo = document.getElementById("banner-2");
+    const bannerThree = document.getElementById("banner-3");
+    const bannerFour = document.getElementById("banner-4");
 
-  // Kill any existing tweens
-  gsap.killTweensOf(banners);
+    if (bannerOne && bannerTwo && bannerThree && bannerFour) {
+        const tl = gsap.timeline();
 
-  gsap.timeline({
-    defaults: {
-      ...ANIMATION_CONFIG,
-      onComplete: () => {
-        router.push(href);
-        // Clean up transforms after animation
-        gsap.set(banners, { clearProps: "all" });
-      },
-    },
-  })
-    .set(banners, {
-      yPercent: -100,
-      backgroundColor: COLORS.transition,
-      immediateRender: true,
-    })
-    .to(banners, {
-      yPercent: 0,
-      backgroundColor: COLORS.initial,
-    });
+        tl.set([bannerOne, bannerTwo, bannerThree, bannerFour], {
+            yPercent: -100,
+            backgroundColor: "rgb(0, 111, 184)", // Update to match your palette
+        }).to([bannerOne, bannerTwo, bannerThree, bannerFour], {
+            yPercent: 0,
+            stagger: 0.2,
+            backgroundColor: "rgb(18, 32, 47)", // Update to match your palette
+            onComplete: () => {
+                router.push(href);
+            },
+        });
+    }
 };
