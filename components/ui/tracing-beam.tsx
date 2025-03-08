@@ -5,17 +5,13 @@ import { cn } from "@/utils/cn"; // Optional utility for classnames
 
 export const TracingBeam = ({ className }: { className?: string }) => {
   const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"],
-  });
+  const { scrollYProgress } = useScroll();
 
   const [svgHeight, setSvgHeight] = useState(0);
 
   useEffect(() => {
-    if (ref.current) {
-      setSvgHeight(ref.current.offsetHeight);
-    }
+    // Simply set SVG height to document height instead of component height
+    setSvgHeight(document.documentElement.scrollHeight);
   }, []);
 
   const y1 = useSpring(
