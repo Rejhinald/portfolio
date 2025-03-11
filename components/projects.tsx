@@ -77,84 +77,83 @@ export function ProjectsDemo() {
         <BackgroundBeams />
       </div>
 
-      {/* TracingBeam Component */}
-      <TracingBeam />
-
-      <div className="relative z-10 container max-w-screen-lg mx-auto pt-24 space-y-8 text-white">
-        {projects.map((project) => (
-          <motion.div
-            key={project.id}
-            className="grid grid-cols-1 gap-4"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeInFromLeft}
-          >
-            {/* Video Placeholder */}
+      {/* TracingBeam Component with children */}
+      <TracingBeam>
+        <div className="relative z-10 container max-w-screen-lg mx-auto pt-24 space-y-8 text-white">
+          {projects.map((project) => (
             <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="relative bg-gray-800 rounded-lg overflow-hidden h-[400px] md:h-[500px] lg:h-[600px]"
+              key={project.id}
+              className="grid grid-cols-1 gap-4"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeInFromLeft}
             >
-              <iframe
-                src={project.videoSrc}
-                title={project.title}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                
-              ></iframe>
-            </motion.div>
+              {/* Video Placeholder */}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="relative bg-gray-800 rounded-lg overflow-hidden h-[400px] md:h-[500px] lg:h-[600px]"
+              >
+                <iframe
+                  src={project.videoSrc}
+                  title={project.title}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </motion.div>
 
-            {/* Project Details */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="bg-gray-800 rounded-lg p-6 shadow-lg flex flex-col"
-            >
-              <h3 className="text-2xl font-bold mb-2 text-white">
-                {project.title}
-              </h3>
-              <p className="text-gray-400 mb-4">
-                {project.description ||
-                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam."}
-              </p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {project.techStack.map((tech, index) => (
-                  <span
-                    key={index}
-                    className="bg-gray-700 text-white text-xs font-semibold px-2 py-1 rounded"
+              {/* Project Details */}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="bg-gray-800 rounded-lg p-6 shadow-lg flex flex-col"
+              >
+                <h3 className="text-2xl font-bold mb-2 text-white">
+                  {project.title}
+                </h3>
+                <p className="text-gray-400 mb-4">
+                  {project.description ||
+                    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam."}
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {project.techStack.map((tech, index) => (
+                    <span
+                      key={index}
+                      className="bg-gray-700 text-white text-xs font-semibold px-2 py-1 rounded"
+                    >
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <motion.a
+                    href={project.liveLink}
+                    whileHover={{
+                      scale: 1.1,
+                      backgroundColor: "#4ADE80",
+                      color: "#1F2937",
+                    }}
+                    className="bg-gray-700 hover:bg-gray-700 text-white font-semibold py-4 rounded-lg flex items-center justify-center"
                   >
-                    {tech}
-                  </span>
-                ))}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <motion.a
-                  href={project.liveLink}
-                  whileHover={{
-                    scale: 1.1,
-                    backgroundColor: "#4ADE80",
-                    color: "#1F2937",
-                  }}
-                  className="bg-gray-700 hover:bg-gray-700 text-white font-semibold py-4 rounded-lg flex items-center justify-center"
-                >
-                  <FaLink className="text-3xl" />
-                </motion.a>
-                <motion.a
-                  href={project.githubLink}
-                  whileHover={{
-                    scale: 1.1,
-                    backgroundColor: "#60A5FA",
-                    color: "#1F2937",
-                  }}
-                  className="bg-gray-700 hover:bg-gray-700 text-white font-semibold py-4 rounded-lg flex items-center justify-center"
-                >
-                  <FaGithub className="text-3xl" />
-                </motion.a>
-              </div>
+                    <FaLink className="text-3xl" />
+                  </motion.a>
+                  <motion.a
+                    href={project.githubLink}
+                    whileHover={{
+                      scale: 1.1,
+                      backgroundColor: "#60A5FA",
+                      color: "#1F2937",
+                    }}
+                    className="bg-gray-700 hover:bg-gray-700 text-white font-semibold py-4 rounded-lg flex items-center justify-center"
+                  >
+                    <FaGithub className="text-3xl" />
+                  </motion.a>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </TracingBeam>
     </section>
   );
 }
