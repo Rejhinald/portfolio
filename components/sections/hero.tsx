@@ -1,4 +1,4 @@
-import { PetalField } from "@/components/three/petal-field";
+import { PetalFieldLazy } from "@/components/three/petal-field-lazy";
 import { Eyebrow } from "@/components/system/eyebrow";
 import { PillButton } from "@/components/system/pill-button";
 import { profile } from "@/lib/data/profile";
@@ -16,7 +16,7 @@ export function Hero() {
       />
 
       {/* Drifting sakura petals */}
-      <PetalField className="absolute inset-0" />
+      <PetalFieldLazy className="absolute inset-0" />
 
       {/* Faint torii corner mark */}
       <svg

@@ -23,9 +23,32 @@ const zen = Zen_Kaku_Gothic_New({
 });
 
 export const metadata: Metadata = {
-  title: "Arwin Gerard Miclat — Portfolio",
+  title: "Arwin Gerard Miclat — Web Developer",
   description:
-    "Computer engineer & web developer crafting cinematic, high-performance interfaces.",
+    "Computer engineer & web developer crafting cinematic, high-performance interfaces. Next.js, GSAP, and Three.js.",
+  keywords: [
+    "Arwin Miclat",
+    "web developer",
+    "computer engineer",
+    "Next.js",
+    "GSAP",
+    "Three.js",
+    "portfolio",
+  ],
+  authors: [{ name: "Arwin Gerard Miclat" }],
+  openGraph: {
+    title: "Arwin Gerard Miclat — Web Developer",
+    description:
+      "Computer engineer & web developer crafting cinematic, high-performance interfaces.",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Arwin Gerard Miclat — Web Developer",
+    description:
+      "Computer engineer & web developer crafting cinematic, high-performance interfaces.",
+  },
 };
 
 export default function RootLayout({
