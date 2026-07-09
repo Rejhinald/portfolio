@@ -131,7 +131,11 @@ Order in `app/page.tsx`:
 - Full-viewport (`100svh`) daytime-sky stage: soft gradient sky-blue (`--wa-sora`) → washi.
 - **Three.js drifting sakura petals** (§7) full-bleed behind content.
 - Faint far line-art **castle/torii** corner mark (echo of Avorino's blueprint corner), very low opacity.
-- **Bottom-left editorial lockup:** eyebrow (with a kanji accent, e.g. `職人 · Software Craftsman` — final copy TBD) → 56px gold hairline → **mincho serif name/tagline** with per-line clip-wipe reveal → subhead → magnetic **vermillion pill** ("View work") + ghost "Download CV".
+- **Bottom-left editorial lockup (name-forward editorial):**
+  - Eyebrow: `ようこそ · WELCOME` (kanji/kana accent + gold hairline under it).
+  - **Mincho serif name** as the hero, two lines with per-line clip-wipe reveal: "Arwin Gerard" / "Miclat".
+  - Subhead: "Computer engineer & web developer crafting cinematic, high-performance interfaces."
+  - Magnetic **vermillion pill** ("View work") + ghost "Download CV".
 - Centered scroll indicator (label + hairline + animated dot).
 
 ## 7. Three.js Petal Field
@@ -187,7 +191,7 @@ Delivio · Poem.io · Spotify Clone · Hotel Management System · San Luis Touri
 **Contact:**
 - Keep Resend form → `arwinmiclat@gmail.com` (tidy `from` to a verified/branded sender if available).
 - **Download CV** button → `public/cv/Arwin_Gerard_Miclat_Resume.pdf`.
-- Direct links: email, GitHub, LinkedIn, phone (+63 922 746 6200), location (Angeles City, Pampanga).
+- Direct links: email (arwinmiclat@gmail.com), GitHub (https://github.com/Rejhinald), LinkedIn (https://www.linkedin.com/in/arwin-miclat/), Facebook (https://www.facebook.com/Zeihji/), Instagram (https://www.instagram.com/arwnmclt/), phone (+63 922 746 6200), location (Angeles City, Pampanga).
 - Background: subtle petal/sky treatment.
 
 ## 11. Animation System (from Avorino)
@@ -212,13 +216,14 @@ Delivio · Poem.io · Spotify Clone · Hotel Management System · San Luis Touri
 - Build and verify locally; **do not push without owner approval** (push auto-deploys via Vercel CI/CD). Owner controls the live-flip moment.
 - Keep `app/favicon.ico`; keep `/api/send`; set `RESEND_API_KEY` locally to test contact.
 
-## 14. Open Items to Confirm During Review
+## 14. Resolved Decisions (finalized 2026-07-09)
 
-1. **Hero tagline & eyebrow copy** — propose 2–3 options (e.g. eyebrow `職人 · Software Craftsman`; tagline direction).
-2. **GitHub / LinkedIn URLs** — pull from current `components/data/data.tsx`; confirm they're current.
-3. **Showcase captions** — confirm the role/year framing per product (esp. ADUPortal and SimpleProjex).
-4. **Nexwin/Avorino background stand-ins** — confirm a faithful static/lightweight recreation (not a full 3D port) is acceptable for the two heaviest scenes.
-5. **Portrait** — confirm the hanami photo is the About portrait (and whether to crop the subject out).
+1. **Hero copy** — name-forward editorial lockup (see §6): eyebrow `ようこそ · WELCOME`, serif name "Arwin Gerard / Miclat", subhead "Computer engineer & web developer crafting cinematic, high-performance interfaces."
+2. **Socials** — GitHub `Rejhinald`, LinkedIn `arwin-miclat`, Facebook `Zeihji`, Instagram `arwnmclt` (from old `data.tsx`; confirmed current).
+3. **Nexwin/Avorino showcases** — **lightweight/static stand-in** with a subtle animated hint; do **not** port the full 3D scenes.
+4. **About portrait** — use the **full hanami photo** (owner + Osaka Castle + sakura).
+5. **Work Experience** — the **CV's three roles only** (Avorino, USA Wholesale Supplies, Hooli Software); earlier roles omitted.
+6. **Build workflow** — rebuild in-place on `main`; build/verify locally; push gated on owner approval.
 
 ## 15. Success Criteria
 
