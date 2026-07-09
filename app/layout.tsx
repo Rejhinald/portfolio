@@ -1,28 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-import { NavbarDemo } from "@/components/navbar-menu";
-const inter = Inter({ subsets: ["latin"] });
-
-// FIX THE LAYOUT TO MAKE EVERY PAGE RESPONSIVE TO DIMENSIONS
 
 export const metadata: Metadata = {
-  title: "Arwin Miclat - Portfolio",
-  description: "Portfolio of Arwin Miclat, a Compunter engineer based in the Philippines.",
+  title: "Arwin Gerard Miclat — Portfolio",
+  description:
+    "Computer engineer & web developer crafting cinematic, high-performance interfaces.",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <link rel="icon" href="/favicon.ico" sizes="any" />
-      <body className={`dark ${inter.className}`}>
-        <NavbarDemo />
-        {children}
-      </body>
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }
