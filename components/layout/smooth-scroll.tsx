@@ -23,7 +23,23 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     gsap.ticker.add(raf);
     gsap.ticker.lagSmoothing(0);
 
+    // Smooth in-page anchor navigation through Lenis (clears the fixed nav).
+    const onClick = (e: MouseEvent) => {
+      const anchor = (e.target as HTMLElement)?.closest?.(
+        'a[href^="#"]',
+      ) as HTMLAnchorElement | null;
+      if (!anchor) return;
+      const id = anchor.getAttribute("href");
+      if (!id || id === "#") return;
+      const target = document.querySelector(id);
+      if (!target) return;
+      e.preventDefault();
+      lenis.scrollTo(target as HTMLElement, { offset: -80 });
+    };
+    document.addEventListener("click", onClick);
+
     return () => {
+      document.removeEventListener("click", onClick);
       gsap.ticker.remove(raf);
       lenis.destroy();
     };

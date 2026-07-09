@@ -3,6 +3,10 @@ import { Shippori_Mincho, Zen_Kaku_Gothic_New } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/layout/smooth-scroll";
 import { RevealProvider } from "@/components/layout/reveal-provider";
+import { Nav } from "@/components/layout/nav";
+import { Footer } from "@/components/layout/footer";
+import { Preloader } from "@/components/layout/preloader";
+import { Cursor } from "@/components/layout/cursor";
 
 const shippori = Shippori_Mincho({
   subsets: ["latin"],
@@ -33,9 +37,13 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body>
+        <Preloader />
         <SmoothScroll>
           <RevealProvider />
-          {children}
+          <Cursor />
+          <Nav />
+          <main id="top">{children}</main>
+          <Footer />
         </SmoothScroll>
       </body>
     </html>
