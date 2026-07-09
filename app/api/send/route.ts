@@ -6,13 +6,35 @@ import { Resend } from "resend";
 // Destination for contact-form submissions.
 const TO_EMAIL = "arwinmiclat@gmail.com";
 const FROM_EMAIL = "Portfolio Contact <onboarding@resend.dev>";
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
-  const { name, email, message } = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json(
+      { message: "Invalid request body" },
+      { status: 400 },
+    );
+  }
+
+  const { name, email, message } = (body ?? {}) as {
+    name?: string;
+    email?: string;
+    message?: string;
+  };
 
   if (!name || !email || !message) {
     return NextResponse.json(
       { message: "All fields are required" },
+      { status: 400 },
+    );
+  }
+
+  if (!EMAIL_RE.test(email)) {
+    return NextResponse.json(
+      { message: "Please provide a valid email address" },
       { status: 400 },
     );
   }

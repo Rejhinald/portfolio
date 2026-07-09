@@ -128,6 +128,18 @@ export function useReveal(): void {
       });
     });
 
-    return () => ctx.revert();
+    // Reveal trigger positions are measured at mount against fallback-font
+    // metrics; recompute once the display:swap webfonts land and on resize so
+    // start/end offsets track the actual (post-swap) layout.
+    const onResize = () => ScrollTrigger.refresh();
+    window.addEventListener("resize", onResize);
+    if (typeof document !== "undefined" && "fonts" in document) {
+      document.fonts.ready.then(() => ScrollTrigger.refresh());
+    }
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      ctx.revert();
+    };
   }, []);
 }

@@ -8,6 +8,7 @@ import { Eyebrow } from "@/components/system/eyebrow";
 import { DisplayHeading } from "@/components/system/display-heading";
 import { PillButton } from "@/components/system/pill-button";
 import { profile } from "@/lib/data/profile";
+import { cn } from "@/lib/utils";
 
 type Status = "idle" | "sending" | "sent" | "error";
 
@@ -35,10 +36,12 @@ export function Contact() {
   const inputClass =
     "w-full rounded-lg border border-rule bg-paper-2 px-4 py-3 text-ink placeholder:text-stone focus:border-gold focus:outline-none";
 
+  const socialUrl = (name: string) =>
+    profile.socials.find((s) => s.name === name)?.url;
   const links = [
     { icon: Mail, label: profile.email, href: `mailto:${profile.email}` },
-    { icon: Github, label: "github.com/Rejhinald", href: profile.socials[0].url },
-    { icon: Linkedin, label: "in/arwin-miclat", href: profile.socials[1].url },
+    { icon: Github, label: "github.com/Rejhinald", href: socialUrl("GitHub") },
+    { icon: Linkedin, label: "in/arwin-miclat", href: socialUrl("LinkedIn") },
     { icon: Phone, label: profile.phone, href: `tel:${profile.phone.replace(/\s/g, "")}` },
     { icon: MapPin, label: profile.location, href: undefined },
   ];
@@ -119,7 +122,7 @@ export function Contact() {
               placeholder="Your message"
               value={form.message}
               onChange={(e) => setForm({ ...form, message: e.target.value })}
-              className={`${inputClass} resize-none`}
+              className={cn(inputClass, "resize-none")}
             />
             <button
               type="submit"

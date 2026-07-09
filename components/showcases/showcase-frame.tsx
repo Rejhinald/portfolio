@@ -28,8 +28,13 @@ export function ShowcaseFrame({
             {domain}
           </span>
         </div>
-        {/* Screen — the recreation fills this */}
-        <div className="relative aspect-[16/10] w-full overflow-hidden bg-white">
+        {/* Screen — the recreation fills this. Decorative: its fake headings
+            and faux fields are hidden from assistive tech (the anchor's
+            aria-label names the link). */}
+        <div
+          className="relative aspect-[16/10] w-full overflow-hidden bg-white"
+          aria-hidden="true"
+        >
           {children}
           <span className="pointer-events-none absolute right-4 top-4 z-20 inline-flex items-center gap-1 rounded-full bg-ink/85 px-3 py-1.5 text-xs text-paper opacity-0 transition-opacity duration-300 group-hover:opacity-100">
             Visit site <ArrowUpRight size={13} />

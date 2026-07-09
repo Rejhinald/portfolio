@@ -64,6 +64,7 @@
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
+    scroll-padding-top: 6rem;
   }
   body {
     background: var(--wa-paper);

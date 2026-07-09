@@ -52,6 +52,11 @@ export function SimpleProjexShowcase() {
 @keyframes spx-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes spx-spin-rev { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
 @keyframes spx-pulse { 0%, 100% { transform: scale(1); opacity: .5; } 50% { transform: scale(1.14); opacity: .12; } }
+@media (prefers-reduced-motion: reduce) {
+  @keyframes spx-spin { from, to { transform: none; } }
+  @keyframes spx-spin-rev { from, to { transform: none; } }
+  @keyframes spx-pulse { 0%, 100% { transform: none; opacity: .35; } 50% { transform: none; opacity: .35; } }
+}
 `,
         }}
       />

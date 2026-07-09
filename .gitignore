@@ -40,3 +40,5 @@ next-env.d.ts
 /token-check.png
 *-check.png
 /showcase-*.png
+/mobile-*.png
+/fix-*.png
