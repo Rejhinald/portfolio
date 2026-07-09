@@ -127,3 +127,22 @@
     display: inline-block;
   }
 }
+
+@keyframes wa-scroll-dot {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(28px);
+    opacity: 0;
+  }
+}
+
+.wa-scroll-dot {
+  animation: wa-scroll-dot 1.8s ease-in-out infinite;
+}
+
