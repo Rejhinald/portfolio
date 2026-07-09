@@ -126,6 +126,18 @@
   .wa-word {
     display: inline-block;
   }
+  .type-hero {
+    font-size: var(--text-hero);
+  }
+  .type-page-title {
+    font-size: var(--text-page-title);
+  }
+  .type-section-title {
+    font-size: var(--text-section-title);
+  }
+  .type-card-title {
+    font-size: var(--text-card-title);
+  }
 }
 
 @keyframes wa-scroll-dot {
