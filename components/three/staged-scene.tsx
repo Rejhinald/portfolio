@@ -26,7 +26,9 @@ type StagedSceneProps = {
 export function StagedScene({ className, init }: StagedSceneProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const initRef = useRef(init);
-  initRef.current = init;
+  useEffect(() => {
+    initRef.current = init;
+  }, [init]);
 
   useEffect(() => {
     const wrap = wrapRef.current;

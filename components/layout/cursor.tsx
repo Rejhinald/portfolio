@@ -1,19 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 export function Cursor() {
   const dotRef = useRef<HTMLDivElement>(null);
-  const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const fine = window.matchMedia("(pointer: fine)").matches;
     if (reduce || !fine) return;
-    setEnabled(true);
 
     const dot = dotRef.current;
     if (!dot) return;
+    dot.style.opacity = "1";
 
     let x = window.innerWidth / 2;
     let y = window.innerHeight / 2;
@@ -38,12 +37,10 @@ export function Cursor() {
     };
   }, []);
 
-  if (!enabled) return null;
-
   return (
     <div
       ref={dotRef}
-      className="pointer-events-none fixed left-0 top-0 z-[9998]"
+      className="pointer-events-none fixed left-0 top-0 z-[9998] opacity-0"
       aria-hidden
     >
       <span className="block h-3 w-3 rounded-full bg-sakura-deep/70 mix-blend-multiply" />
