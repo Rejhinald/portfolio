@@ -1,1 +1,125 @@
 @import "tailwindcss";
+
+:root {
+  /* Washi paper surfaces */
+  --wa-paper: #f3eee6;
+  --wa-paper-2: #faf6ef;
+  --wa-paper-3: #eae3d7;
+  /* Sumi ink text */
+  --wa-ink: #20242a;
+  --wa-ink-2: #333a3f;
+  --wa-ink-mid: #5e6870;
+  --wa-stone: #8c9a97;
+  /* Shu vermillion (CTA / punch) */
+  --wa-shu: #d9432c;
+  --wa-shu-deep: #a83320;
+  /* Kin gold (hairlines) */
+  --wa-gold: #c2a05b;
+  --wa-gold-deep: #8c6e3f;
+  /* Sakura pink (soft accent) */
+  --wa-sakura: #e8a0b4;
+  --wa-sakura-2: #f4cdd6;
+  --wa-sakura-deep: #c97a93;
+  /* Sora / ai sky-blue */
+  --wa-sora: #7fa9c9;
+  --wa-sora-deep: #3e6e8e;
+  /* Wakaba spring green */
+  --wa-wakaba: #8fa86b;
+  --wa-wakaba-deep: #5c7a4f;
+  /* Rules / borders */
+  --wa-rule: #d8cfc0;
+  --wa-rule-dark: #2a2e33;
+  /* Fluid type scale */
+  --text-hero: clamp(3rem, 7vw, 6rem);
+  --text-page-title: clamp(2.5rem, 5vw, 4.5rem);
+  --text-section-title: clamp(2rem, 4vw, 3.5rem);
+  --text-card-title: clamp(1.4rem, 2.5vw, 2rem);
+}
+
+@theme inline {
+  --color-paper: var(--wa-paper);
+  --color-paper-2: var(--wa-paper-2);
+  --color-paper-3: var(--wa-paper-3);
+  --color-ink: var(--wa-ink);
+  --color-ink-2: var(--wa-ink-2);
+  --color-ink-mid: var(--wa-ink-mid);
+  --color-stone: var(--wa-stone);
+  --color-shu: var(--wa-shu);
+  --color-shu-deep: var(--wa-shu-deep);
+  --color-gold: var(--wa-gold);
+  --color-gold-deep: var(--wa-gold-deep);
+  --color-sakura: var(--wa-sakura);
+  --color-sakura-2: var(--wa-sakura-2);
+  --color-sakura-deep: var(--wa-sakura-deep);
+  --color-sora: var(--wa-sora);
+  --color-sora-deep: var(--wa-sora-deep);
+  --color-wakaba: var(--wa-wakaba);
+  --color-wakaba-deep: var(--wa-wakaba-deep);
+  --color-rule: var(--wa-rule);
+  --color-rule-dark: var(--wa-rule-dark);
+  --font-display: var(--font-shippori);
+  --font-body: var(--font-zen);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--wa-paper);
+    color: var(--wa-ink);
+    font-family: var(--font-body), system-ui, sans-serif;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display), Georgia, serif;
+    letter-spacing: -0.015em;
+    line-height: 1.02;
+    font-weight: 500;
+  }
+  ::selection {
+    background: var(--wa-sakura);
+    color: var(--wa-ink);
+  }
+}
+
+@layer utilities {
+  .display {
+    font-family: var(--font-display), Georgia, serif;
+    letter-spacing: -0.015em;
+  }
+  .eyebrow {
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--wa-ink-mid);
+  }
+  .gold-rule {
+    display: inline-block;
+    width: 56px;
+    height: 1px;
+    background: var(--wa-gold);
+  }
+  .wa-container {
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 4vw, 2.5rem);
+  }
+  .wa-container-narrow {
+    max-width: 56rem;
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 4vw, 2.5rem);
+  }
+  .section-pad {
+    padding-block: clamp(4rem, 8vw, 7rem);
+  }
+  .wa-word {
+    display: inline-block;
+  }
+}
