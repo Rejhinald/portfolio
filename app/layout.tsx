@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Shippori_Mincho, Zen_Kaku_Gothic_New } from "next/font/google";
 import "./globals.css";
+import { SmoothScroll } from "@/components/layout/smooth-scroll";
 
 const shippori = Shippori_Mincho({
   subsets: ["latin"],
@@ -30,7 +31,9 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
-      <body>{children}</body>
+      <body>
+        <SmoothScroll>{children}</SmoothScroll>
+      </body>
     </html>
   );
 }
