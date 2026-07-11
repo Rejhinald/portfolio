@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { PALETTE } from "./palette";
 import { mulberry32, randRange } from "./prng";
-import { makeDetailTexture } from "./textures";
+import { makeSurfaceMaps, applySurface } from "./textures";
 import type { Tier } from "./quality";
 
 export type IslandOpts = { seed?: number; tier?: Tier };
@@ -33,14 +33,14 @@ export function createIslandModel(opts: IslandOpts = {}): THREE.Group {
   const root = new THREE.Group();
   const topR = 2.6;
 
-  // A little surface texture: soft grass mottle, cracked dirt + rock.
+  // Surface texture + normal relief: grass mottle, cracked dirt, cracked rock.
   const s = opts.seed ?? 5;
   const grassMat = std(PALETTE.wakaba, 0.9);
-  grassMat.map = makeDetailTexture(s + 1, { cracks: 6, mottle: 0.08, repeat: 3, crackAlpha: 0.22 });
+  applySurface(grassMat, makeSurfaceMaps(s + 1, { cracks: 8, mottle: 0.1, repeat: 3, crackAlpha: 0.24, normalScale: 0.5 }));
   const soilMat = std(PALETTE.bark, 0.95);
-  soilMat.map = makeDetailTexture(s + 2, { cracks: 15, mottle: 0.1, repeat: 2 });
+  applySurface(soilMat, makeSurfaceMaps(s + 2, { cracks: 18, mottle: 0.12, repeat: 2, normalScale: 0.85 }));
   const rockMat = std(PALETTE.stoneDark, 0.95);
-  rockMat.map = makeDetailTexture(s + 3, { cracks: 12, mottle: 0.12, repeat: 2 });
+  applySurface(rockMat, makeSurfaceMaps(s + 3, { cracks: 16, mottle: 0.14, repeat: 2, normalScale: 0.95 }));
 
   const grassGeo = new THREE.CylinderGeometry(topR, topR * 0.98, 0.42, 14, 1);
   craggy(grassGeo, rng, 0.06);
