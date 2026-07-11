@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { PALETTE } from "./palette";
 import { mulberry32, randRange } from "./prng";
+import { makeDetailTexture } from "./textures";
 import type { Tier } from "./quality";
 
 export type SakuraOpts = { seed?: number; tier?: Tier };
@@ -48,6 +49,12 @@ export function createSakuraTreeModel(opts: SakuraOpts = {}): THREE.Group {
   root.add(branches);
 
   const bark = barkMaterial();
+  bark.map = makeDetailTexture((opts.seed ?? 11) + 7, {
+    cracks: 16,
+    mottle: 0.08,
+    repeat: 4,
+    crackAlpha: 0.35,
+  });
   const anchors: THREE.Vector3[] = [];
 
   const grow = (

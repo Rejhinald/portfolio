@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { PALETTE } from "./palette";
 import { mulberry32, randRange } from "./prng";
+import { makeDetailTexture } from "./textures";
 import type { Tier } from "./quality";
 
 export type IslandOpts = { seed?: number; tier?: Tier };
@@ -32,21 +33,30 @@ export function createIslandModel(opts: IslandOpts = {}): THREE.Group {
   const root = new THREE.Group();
   const topR = 2.6;
 
+  // A little surface texture: soft grass mottle, cracked dirt + rock.
+  const s = opts.seed ?? 5;
+  const grassMat = std(PALETTE.wakaba, 0.9);
+  grassMat.map = makeDetailTexture(s + 1, { cracks: 6, mottle: 0.08, repeat: 3, crackAlpha: 0.22 });
+  const soilMat = std(PALETTE.bark, 0.95);
+  soilMat.map = makeDetailTexture(s + 2, { cracks: 15, mottle: 0.1, repeat: 2 });
+  const rockMat = std(PALETTE.stoneDark, 0.95);
+  rockMat.map = makeDetailTexture(s + 3, { cracks: 12, mottle: 0.12, repeat: 2 });
+
   const grassGeo = new THREE.CylinderGeometry(topR, topR * 0.98, 0.42, 14, 1);
   craggy(grassGeo, rng, 0.06);
-  const grass = new THREE.Mesh(grassGeo, std(PALETTE.wakaba, 0.9));
+  const grass = new THREE.Mesh(grassGeo, grassMat);
   grass.position.y = -0.21;
   root.add(grass);
 
   const soilGeo = new THREE.CylinderGeometry(topR * 0.98, topR * 0.7, 0.7, 14, 1);
   craggy(soilGeo, rng, 0.08);
-  const soil = new THREE.Mesh(soilGeo, std(PALETTE.bark, 0.95));
+  const soil = new THREE.Mesh(soilGeo, soilMat);
   soil.position.y = -0.77;
   root.add(soil);
 
   const rockGeo = new THREE.ConeGeometry(topR * 0.72, 3.0, 12, 4);
   craggy(rockGeo, rng, 0.14);
-  const rock = new THREE.Mesh(rockGeo, std(PALETTE.stoneDark, 0.95));
+  const rock = new THREE.Mesh(rockGeo, rockMat);
   rock.rotation.x = Math.PI;
   rock.position.y = -1.1 - 1.5;
   root.add(rock);

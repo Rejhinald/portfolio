@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { PALETTE } from "./palette";
 import { mulberry32, randRange } from "./prng";
+import { makeDetailTexture } from "./textures";
 import type { Tier } from "./quality";
 
 export type CastleOpts = { seed?: number; tier?: Tier };
@@ -104,6 +105,11 @@ export function createCastleModel(opts: CastleOpts = {}): THREE.Group {
   const greenMat = standard(PALETTE.roofGreen, 0.55);
   const goldMat = standard(PALETTE.gold, 0.35, 0.7);
   const windowMat = standard(0x2b2f36, 0.5);
+
+  // A little surface texture: patina cracks on the copper roofs, grit on stone.
+  const seed = opts.seed ?? 7;
+  greenMat.map = makeDetailTexture(seed + 3, { cracks: 13, mottle: 0.05, repeat: 2, crackAlpha: 0.3 });
+  stoneMat.map = makeDetailTexture(seed + 5, { cracks: 7, mottle: 0.1, repeat: 2 });
 
   // Sloped stone base (batter).
   const baseH = 0.6;
