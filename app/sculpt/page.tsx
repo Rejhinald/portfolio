@@ -2,8 +2,8 @@
 
 // TEMPORARY sculpting route (removed in cleanup). Swap the factory to review each model.
 import { SculptPreview } from "@/components/three/sculpt-preview";
-import { createCastleModel } from "@/lib/three/create-castle";
+import { createSakuraTreeModel } from "@/lib/three/create-sakura-tree";
 
 export default function SculptPage() {
-  return <SculptPreview make={() => createCastleModel()} camY={1.3} />;
+  return <SculptPreview make={() => createSakuraTreeModel()} camY={1.2} />;
 }
