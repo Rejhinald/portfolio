@@ -23,7 +23,7 @@ export function Hero() {
         className="pointer-events-none absolute inset-0 z-[1]"
         style={{
           background:
-            "linear-gradient(to top, var(--wa-paper) 0%, color-mix(in srgb, var(--wa-paper) 55%, transparent) 30%, transparent 56%)",
+            "linear-gradient(to top, var(--wa-paper) 0%, var(--wa-paper) 18%, color-mix(in srgb, var(--wa-paper) 68%, transparent) 40%, transparent 64%)",
         }}
       />
 

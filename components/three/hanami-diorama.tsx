@@ -100,10 +100,10 @@ export function HanamiDiorama({ className }: { className?: string }) {
 
         // Framing: island upper-right on desktop (bottom-left stays open for the
         // name lockup); upper-center on mobile.
-        const ISLAND_X = wide ? 2.9 : 0.1;
-        const BASE_Y = wide ? 3.5 : 3.35;
+        const ISLAND_X = wide ? 0 : 0.1;
+        const BASE_Y = wide ? 3.05 : 3.4;
         island.position.set(ISLAND_X, BASE_Y, 0);
-        island.scale.setScalar(wide ? 0.76 : 0.62);
+        island.scale.setScalar(wide ? 0.82 : 0.62);
         scene.add(island);
 
         let petals: { mesh: THREE.InstancedMesh; update: (t: number) => void } | null = null;
@@ -117,8 +117,8 @@ export function HanamiDiorama({ className }: { className?: string }) {
         mist.mesh.position.set(ISLAND_X, wide ? 1.5 : 1.1, 0);
         scene.add(mist.mesh);
 
-        const baseCam = new THREE.Vector3(0, wide ? 2.95 : 3.0, wide ? 9.8 : 8.0);
-        const target = new THREE.Vector3(wide ? 0.1 : 0.1, wide ? 2.75 : 3.0, 0);
+        const baseCam = new THREE.Vector3(0, wide ? 2.7 : 3.05, wide ? 9.3 : 8.0);
+        const target = new THREE.Vector3(wide ? 0 : 0.1, wide ? 2.65 : 3.05, 0);
         camera.position.copy(baseCam);
         camera.lookAt(target);
 

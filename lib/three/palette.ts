@@ -14,6 +14,10 @@ export const PALETTE = {
   stone: 0x8c9a97,
   stoneDark: 0x6b736f,
   bark: 0x5c4a3a,
+  // Osaka-castle copper-patina roofs + dark wall banding
+  roofGreen: 0x7aa892,
+  roofGreenDark: 0x557a68,
+  wallDark: 0x3a3f47,
 } as const;
 
 export type Palette = typeof PALETTE;
