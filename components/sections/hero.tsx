@@ -1,4 +1,4 @@
-import { PetalFieldLazy } from "@/components/three/petal-field-lazy";
+import { HanamiDioramaLazy } from "@/components/three/hanami-diorama-lazy";
 import { Eyebrow } from "@/components/system/eyebrow";
 import { PillButton } from "@/components/system/pill-button";
 import { profile } from "@/lib/data/profile";
@@ -15,24 +15,17 @@ export function Hero() {
         }}
       />
 
-      {/* Drifting sakura petals */}
-      <PetalFieldLazy className="absolute inset-0" />
+      {/* Floating hanami island diorama (castle + sakura tree + petals) */}
+      <HanamiDioramaLazy className="absolute inset-0" />
 
-      {/* Faint torii corner mark */}
-      <svg
-        className="pointer-events-none absolute right-8 top-24 hidden opacity-[0.09] md:block"
-        width="220"
-        height="180"
-        viewBox="0 0 220 180"
-        fill="none"
-        aria-hidden
-      >
-        <path d="M8 34 H212" stroke="var(--wa-ink)" strokeWidth="7" strokeLinecap="round" />
-        <path d="M24 52 H196" stroke="var(--wa-ink)" strokeWidth="5" strokeLinecap="round" />
-        <path d="M52 52 V172" stroke="var(--wa-ink)" strokeWidth="7" strokeLinecap="round" />
-        <path d="M168 52 V172" stroke="var(--wa-ink)" strokeWidth="7" strokeLinecap="round" />
-        <path d="M2 30 Q110 6 218 30" stroke="var(--wa-ink)" strokeWidth="7" fill="none" strokeLinecap="round" />
-      </svg>
+      {/* Legibility scrim: fades the lower area toward paper behind the lockup */}
+      <div
+        className="pointer-events-none absolute inset-0 z-[1]"
+        style={{
+          background:
+            "linear-gradient(to top, var(--wa-paper) 0%, color-mix(in srgb, var(--wa-paper) 55%, transparent) 30%, transparent 56%)",
+        }}
+      />
 
       {/* Bottom-left editorial lockup */}
       <div className="wa-container relative z-10 pb-20 md:pb-28">
