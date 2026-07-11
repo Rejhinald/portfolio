@@ -40,13 +40,15 @@ export function Showcases() {
 
         <div className="mx-auto mt-16 flex max-w-5xl flex-col gap-20">
           {showcases.map((s) => {
-            const Recreation = recreations[s.key];
+            const { key: showcaseKey, ...frameProps } = s;
+            const Recreation = recreations[showcaseKey];
             // These two are authored in fixed pixels (not container-query
             // units), so they need the scale-to-fit wrapper to stay proportional.
-            const needsScale = s.key === "nexwin" || s.key === "simpleprojex";
+            const needsScale =
+              showcaseKey === "nexwin" || showcaseKey === "simpleprojex";
             return (
-              <div key={s.key} data-animate="fade-up">
-                <ShowcaseFrame {...s}>
+              <div key={showcaseKey} data-animate="fade-up">
+                <ShowcaseFrame {...frameProps}>
                   {needsScale ? (
                     <ScaleToFit>
                       <Recreation />

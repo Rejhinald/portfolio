@@ -9,7 +9,7 @@ export function ShowcaseFrame({
   href,
   domain,
   children,
-}: Showcase & { children: React.ReactNode }) {
+}: Omit<Showcase, "key"> & { children: React.ReactNode }) {
   return (
     <a
       href={href}
