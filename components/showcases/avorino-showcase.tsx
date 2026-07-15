@@ -64,12 +64,22 @@ export function AvorinoShowcase() {
           boxShadow: "inset 0 0 0 1px rgba(240,237,232,0.06)",
         }}
       >
+        {/* Still frame from the real hero's background footage */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: "url(/showcases/avorino/hero-still.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            opacity: 0.85,
+          }}
+        />
         {/* Warm radial highlight, top-right (stands in for video light) */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(120% 115% at 74% 16%, rgba(96,80,58,0.5) 0%, rgba(38,31,24,0.15) 42%, rgba(20,17,14,0) 62%)",
+              "radial-gradient(120% 115% at 74% 16%, rgba(96,80,58,0.35) 0%, rgba(38,31,24,0.12) 42%, rgba(20,17,14,0) 62%)",
           }}
         />
         {/* Faint full-bleed blueprint grid texture */}
@@ -114,6 +124,36 @@ export function AvorinoShowcase() {
           className="avs-lockup absolute flex flex-col items-start"
           style={{ bottom: "4.6cqw", left: "4.6cqw", right: "4.6cqw", gap: "1.5cqw" }}
         >
+          {/* Trust badges */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "0.6cqw",
+              fontFamily: BODY,
+              fontSize: "0.92cqw",
+              color: CREAM_78,
+            }}
+          >
+            {[
+              "Licensed · B #1107538",
+              "4.8★ · 35+ reviews",
+              "7+ yrs · 34+ OC cities",
+            ].map((t) => (
+              <span
+                key={t}
+                style={{
+                  border: `0.07cqw solid ${CREAM_45}`,
+                  borderRadius: "999px",
+                  padding: "0.4cqw 1cqw",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+
           {/* Eyebrow */}
           <div
             style={{
@@ -124,7 +164,7 @@ export function AvorinoShowcase() {
               color: CREAM_55,
             }}
           >
-            Avorino Construction
+            Avorino · Orange County
           </div>
 
           {/* Gold hairline */}
@@ -142,9 +182,9 @@ export function AvorinoShowcase() {
               maxWidth: "18ch",
             }}
           >
-            <span style={{ display: "block" }}>Built to last.</span>
+            <span style={{ display: "block" }}>You Envision It.</span>
             <span style={{ display: "block", fontStyle: "italic", fontWeight: 400 }}>
-              Designed to live in.
+              Avorino Builds It.
             </span>
           </h1>
 
@@ -159,42 +199,82 @@ export function AvorinoShowcase() {
               maxWidth: "46cqw",
             }}
           >
-            Custom homes, ADUs, and renovations across Orange County with 7+ years of OC
-            experience. Licensed, insured, and we answer our own phone.
+            One accountable partner from start to finish. Avorino manages the
+            process, coordinates the trades, and delivers the project with clarity
+            from day one to final handoff.
           </p>
 
-          {/* Cream pill CTA */}
+          {/* CTA row: cream estimate pill + call pill */}
           <div
             style={{
-              display: "inline-flex",
+              display: "flex",
               alignItems: "center",
-              gap: "0.7cqw",
+              gap: "1cqw",
               marginTop: "0.5cqw",
-              backgroundColor: CREAM,
-              color: INK,
-              fontFamily: BODY,
-              fontSize: "1.25cqw",
-              fontWeight: 500,
-              letterSpacing: "0.04em",
-              padding: "1.15cqw 2.5cqw",
-              borderRadius: "999px",
-              position: "relative",
-              overflow: "hidden",
+              flexWrap: "wrap",
             }}
           >
-            Same-week free consultation
-            <span style={{ display: "inline-block", fontSize: "1.35cqw", lineHeight: 1 }}>→</span>
-            {/* Gold hover rule from the real .btn-pill, shown as a static hairline hint */}
-            <span
+            <div
               style={{
-                position: "absolute",
-                left: 0,
-                bottom: 0,
-                height: "0.16cqw",
-                width: "34%",
-                backgroundColor: GOLD,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.7cqw",
+                backgroundColor: CREAM,
+                color: INK,
+                fontFamily: BODY,
+                fontSize: "1.25cqw",
+                fontWeight: 500,
+                letterSpacing: "0.04em",
+                padding: "1.15cqw 2.5cqw",
+                borderRadius: "999px",
+                position: "relative",
+                overflow: "hidden",
               }}
-            />
+            >
+              Get a Free Estimate
+              <span style={{ display: "inline-block", fontSize: "1.35cqw", lineHeight: 1 }}>→</span>
+              {/* Gold hover rule from the real .btn-pill, shown as a static hairline hint */}
+              <span
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  bottom: 0,
+                  height: "0.16cqw",
+                  width: "34%",
+                  backgroundColor: GOLD,
+                }}
+              />
+            </div>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                border: `0.09cqw solid ${CREAM_45}`,
+                color: CREAM,
+                fontFamily: BODY,
+                fontSize: "1.25cqw",
+                fontWeight: 500,
+                letterSpacing: "0.04em",
+                padding: "1.05cqw 2.2cqw",
+                borderRadius: "999px",
+              }}
+            >
+              Call (714) 900-3676
+            </div>
+          </div>
+
+          {/* Free ROI estimate link */}
+          <div
+            style={{
+              fontFamily: BODY,
+              fontSize: "1.05cqw",
+              color: CREAM_78,
+              marginTop: "0.2cqw",
+              borderBottom: `0.08cqw solid ${GOLD}`,
+              paddingBottom: "0.25cqw",
+            }}
+          >
+            See what an ADU adds to your property — free ROI estimate→
           </div>
         </div>
 
