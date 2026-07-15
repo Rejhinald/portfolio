@@ -9,7 +9,7 @@ export function Work() {
     <Section id="work" surface="paper-2">
       <Container>
         <div className="max-w-2xl">
-          <Eyebrow>職歴 · EXPERIENCE</Eyebrow>
+          <Eyebrow seal="弐">職歴 · EXPERIENCE</Eyebrow>
           <DisplayHeading
             as="h2"
             animate="fade-up"

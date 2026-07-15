@@ -9,7 +9,7 @@ export function Skills() {
     <Section id="skills" surface="paper">
       <Container>
         <div className="max-w-2xl">
-          <Eyebrow>道具 · TOOLBOX</Eyebrow>
+          <Eyebrow seal="肆">道具 · TOOLBOX</Eyebrow>
           <DisplayHeading
             as="h2"
             animate="fade-up"

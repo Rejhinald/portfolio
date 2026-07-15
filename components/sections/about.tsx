@@ -26,7 +26,7 @@ export function About() {
           </div>
 
           <div>
-            <Eyebrow>自己紹介 · ABOUT</Eyebrow>
+            <Eyebrow seal="壱">自己紹介 · ABOUT</Eyebrow>
             <DisplayHeading
               as="h2"
               animate="fade-up"

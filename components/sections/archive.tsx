@@ -10,7 +10,7 @@ export function Archive() {
     <Section id="archive" surface="paper-3">
       <Container>
         <div className="max-w-2xl">
-          <Eyebrow>これまで · ARCHIVE</Eyebrow>
+          <Eyebrow seal="伍">これまで · ARCHIVE</Eyebrow>
           <DisplayHeading
             as="h2"
             animate="fade-up"

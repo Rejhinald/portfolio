@@ -51,7 +51,7 @@ export function Contact() {
       <Container>
         <div className="grid gap-14 md:grid-cols-2 md:gap-20">
           <div>
-            <Eyebrow>連絡 · CONTACT</Eyebrow>
+            <Eyebrow seal="陸">連絡 · CONTACT</Eyebrow>
             <DisplayHeading
               as="h2"
               animate="fade-up"

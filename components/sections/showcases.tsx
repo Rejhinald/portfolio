@@ -24,7 +24,7 @@ export function Showcases() {
     <Section id="selected-work" surface="paper">
       <Container>
         <div className="max-w-2xl">
-          <Eyebrow>作品 · SELECTED WORK</Eyebrow>
+          <Eyebrow seal="参">作品 · SELECTED WORK</Eyebrow>
           <DisplayHeading
             as="h2"
             animate="fade-up"

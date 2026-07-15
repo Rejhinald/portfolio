@@ -112,6 +112,38 @@ export function useReveal(): void {
               scrollTrigger,
             });
             break;
+          case "hanko": {
+            // Stamp impact: fast scale-in, a fading shu bleed ring, and a tiny
+            // jolt on the surrounding lockup.
+            const parent = el.parentElement;
+            gsap.set(el, { scale: 1.9, opacity: 0 });
+            const tl = gsap.timeline({ scrollTrigger });
+            tl.to(el, {
+              scale: 1,
+              opacity: 1,
+              duration: 0.35,
+              ease: "power4.in",
+            })
+              .fromTo(
+                el,
+                { boxShadow: "0 0 0 0 rgba(217,67,44,0.45)" },
+                {
+                  boxShadow: "0 0 0 14px rgba(217,67,44,0)",
+                  duration: 0.6,
+                  ease: "power2.out",
+                },
+                ">-0.05",
+              );
+            if (parent) {
+              tl.fromTo(
+                parent,
+                { y: 2 },
+                { y: 0, duration: 0.12, ease: "power2.out" },
+                0.3,
+              );
+            }
+            break;
+          }
           case "parallax":
             gsap.to(el, {
               yPercent: -15,
