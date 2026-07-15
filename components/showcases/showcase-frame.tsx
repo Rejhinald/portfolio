@@ -1,5 +1,6 @@
 import { ArrowUpRight } from "lucide-react";
 import type { Showcase } from "@/lib/data/showcases";
+import { cn } from "@/lib/utils";
 
 export function ShowcaseFrame({
   name,
@@ -8,8 +9,13 @@ export function ShowcaseFrame({
   stack,
   href,
   domain,
+  captionClassName,
   children,
-}: Omit<Showcase, "key"> & { children: React.ReactNode }) {
+}: Omit<Showcase, "key"> & {
+  /** Hide/show the caption per layout (e.g. when a rail or band carries the meta). */
+  captionClassName?: string;
+  children: React.ReactNode;
+}) {
   return (
     <a
       href={href}
@@ -42,13 +48,15 @@ export function ShowcaseFrame({
         </div>
       </div>
       {/* Portfolio caption */}
-      <div className="mt-5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h3 className="display type-card-title text-ink">{name}</h3>
-        <span className="text-sm text-ink-mid">
-          {role} · {year}
-        </span>
+      <div className={cn(captionClassName)}>
+        <div className="mt-5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h3 className="display type-card-title text-ink">{name}</h3>
+          <span className="text-sm text-ink-mid">
+            {role} · {year}
+          </span>
+        </div>
+        <p className="mt-1 text-sm text-stone">{stack}</p>
       </div>
-      <p className="mt-1 text-sm text-stone">{stack}</p>
     </a>
   );
 }
