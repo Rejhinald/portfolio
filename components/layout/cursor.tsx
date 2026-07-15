@@ -22,6 +22,16 @@ export function Cursor() {
       tx = e.clientX;
       ty = e.clientY;
     };
+    // Morph dot → shu ring over interactive targets.
+    const wrap = dot.parentElement ?? dot;
+    const onOver = (e: PointerEvent) => {
+      const t = e.target as HTMLElement | null;
+      wrap.classList.toggle(
+        "wa-cursor-link",
+        !!t?.closest?.('a, button, [role="button"]'),
+      );
+    };
+    window.addEventListener("pointerover", onOver);
     let raf = 0;
     const loop = () => {
       x += (tx - x) * 0.18;
@@ -33,6 +43,7 @@ export function Cursor() {
     raf = requestAnimationFrame(loop);
     return () => {
       window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerover", onOver);
       cancelAnimationFrame(raf);
     };
   }, []);
@@ -43,7 +54,7 @@ export function Cursor() {
       className="pointer-events-none fixed left-0 top-0 z-[9998] opacity-0"
       aria-hidden
     >
-      <span className="block h-3 w-3 rounded-full bg-sakura-deep/70 mix-blend-multiply" />
+      <span className="wa-cursor-dot block h-3 w-3 rounded-full bg-sakura-deep/70 mix-blend-multiply" />
     </div>
   );
 }

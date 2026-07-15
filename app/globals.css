@@ -66,6 +66,34 @@
     -webkit-font-smoothing: antialiased;
     scroll-padding-top: 6rem;
   }
+  /* Washi grain: fine paper tooth + coarse mottle over every surface.
+     Fixed, non-interactive, above content but below cursor/preloader. */
+  body::before,
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    mix-blend-mode: multiply;
+  }
+  body::before {
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  body::after {
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='700'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23m)'/%3E%3C/svg%3E");
+  }
+  /* Themed keyboard focus + footer selection */
+  :focus-visible {
+    outline: 2px solid var(--wa-shu);
+    outline-offset: 2px;
+  }
+  footer ::selection {
+    background: var(--wa-shu);
+    color: var(--wa-paper);
+  }
   body {
     background: var(--wa-paper);
     color: var(--wa-ink);
@@ -126,6 +154,30 @@
   }
   .wa-word {
     display: inline-block;
+  }
+  /* Ghost display type: gold outline, transparent fill */
+  .text-stroke-gold {
+    -webkit-text-stroke: 1px var(--wa-gold);
+    color: transparent;
+  }
+  @supports not (-webkit-text-stroke: 1px black) {
+    .text-stroke-gold {
+      color: var(--wa-paper-3);
+    }
+  }
+  /* Custom cursor: dot ↔ ring morph over interactive targets */
+  .wa-cursor-dot {
+    transition:
+      transform 0.25s cubic-bezier(0.23, 1, 0.32, 1),
+      background-color 0.25s,
+      border-color 0.25s;
+    border: 1.5px solid transparent;
+  }
+  .wa-cursor-link .wa-cursor-dot {
+    transform: scale(2.2);
+    background-color: transparent;
+    border-color: var(--wa-shu);
+    mix-blend-mode: normal;
   }
   .type-hero {
     font-size: var(--text-hero);
