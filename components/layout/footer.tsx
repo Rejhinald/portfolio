@@ -2,7 +2,7 @@ import { profile } from "@/lib/data/profile";
 
 export function Footer() {
   return (
-    <footer className="bg-ink text-paper">
+    <footer className="relative bg-ink text-paper">
       <div className="wa-container flex flex-col gap-10 py-16 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="display text-3xl">{profile.name}</p>
@@ -18,7 +18,7 @@ export function Footer() {
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-paper/70 transition-colors hover:text-paper"
+                  className="border-b border-dotted border-gold/60 pb-0.5 text-sm text-paper/70 transition-colors hover:border-solid hover:border-shu hover:text-paper"
                 >
                   {s.name}
                 </a>

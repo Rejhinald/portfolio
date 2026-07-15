@@ -4,6 +4,7 @@ import "./globals.css";
 import { SmoothScroll } from "@/components/layout/smooth-scroll";
 import { RevealProvider } from "@/components/layout/reveal-provider";
 import { Nav } from "@/components/layout/nav";
+import { TokonomaFrame } from "@/components/layout/tokonoma-frame";
 import { Footer } from "@/components/layout/footer";
 import { Preloader } from "@/components/layout/preloader";
 import { Cursor } from "@/components/layout/cursor";
@@ -65,6 +66,7 @@ export default function RootLayout({
           <RevealProvider />
           <Cursor />
           <Nav />
+          <TokonomaFrame />
           <main id="top">{children}</main>
           <Footer />
         </SmoothScroll>

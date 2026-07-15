@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, useMotionValueEvent, useScroll } from "motion/react";
 import { Menu, X } from "lucide-react";
 import { profile } from "@/lib/data/profile";
@@ -10,7 +10,25 @@ export function Nav() {
   const [hidden, setHidden] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [active, setActive] = useState<string | null>(null);
   const { scrollY } = useScroll();
+
+  // Track which section is in view so its nav link carries the shu stamp-dot.
+  useEffect(() => {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) setActive(`#${e.target.id}`);
+        }
+      },
+      { rootMargin: "-40% 0px -55% 0px" },
+    );
+    profile.nav.forEach((n) => {
+      const el = document.querySelector(n.href);
+      if (el) io.observe(el);
+    });
+    return () => io.disconnect();
+  }, []);
 
   useMotionValueEvent(scrollY, "change", (y) => {
     const prev = scrollY.getPrevious() ?? 0;
@@ -40,8 +58,16 @@ export function Nav() {
             <li key={n.href}>
               <a
                 href={n.href}
-                className="group relative text-sm text-ink-mid transition-colors hover:text-ink"
+                className="group relative inline-flex items-center gap-1.5 text-sm text-ink-mid transition-colors hover:text-ink"
               >
+                <span
+                  className={cn(
+                    "h-1 w-1 rounded-full bg-shu transition-transform duration-300",
+                    active === n.href
+                      ? "scale-100"
+                      : "scale-0 group-hover:scale-100",
+                  )}
+                />
                 {n.label}
                 <span className="absolute -bottom-1 left-0 h-px w-0 bg-gold transition-all duration-300 group-hover:w-full" />
               </a>
