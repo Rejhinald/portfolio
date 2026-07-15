@@ -29,7 +29,11 @@ export function GhostKanji({
         side === "left" ? "-left-[0.18em]" : "-right-[0.18em]",
         anchor === "top" ? "-top-[0.1em]" : "-bottom-[0.12em]",
       )}
-      style={{ fontSize: "clamp(14rem, 34vw, 30rem)" }}
+      style={{
+        fontSize: "clamp(14rem, 34vw, 30rem)",
+        // Multi-glyph ghosts stack vertically so width stays one glyph wide.
+        writingMode: glyph.length > 1 ? "vertical-rl" : undefined,
+      }}
     >
       {glyph}
     </span>

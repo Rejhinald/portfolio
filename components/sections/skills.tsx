@@ -7,7 +7,7 @@ import { skillGroups } from "@/lib/data/skills";
 
 export function Skills() {
   return (
-    <Section id="skills" surface="paper" className="relative overflow-x-clip">
+    <Section id="skills" surface="paper" className="relative overflow-clip">
       <GhostKanji glyph="技" side="left" anchor="bottom" />
       <Container className="relative z-10">
         <div className="max-w-2xl">

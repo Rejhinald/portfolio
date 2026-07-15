@@ -113,9 +113,10 @@ export function useReveal(): void {
             });
             break;
           case "hanko": {
-            // Stamp impact: fast scale-in, a fading shu bleed ring, and a tiny
-            // jolt on the surrounding lockup.
-            const parent = el.parentElement;
+            // Stamp impact: fast scale-in + a fading shu bleed ring. The ring
+            // (box-shadow) lives on the seal's unmasked outer span — masking an
+            // element clips its box-shadow, so Hanko keeps its mask on an inner
+            // span.
             gsap.set(el, { scale: 1.9, opacity: 0 });
             const tl = gsap.timeline({ scrollTrigger });
             tl.to(el, {
@@ -123,25 +124,17 @@ export function useReveal(): void {
               opacity: 1,
               duration: 0.35,
               ease: "power4.in",
-            })
-              .fromTo(
-                el,
-                { boxShadow: "0 0 0 0 rgba(217,67,44,0.45)" },
-                {
-                  boxShadow: "0 0 0 14px rgba(217,67,44,0)",
-                  duration: 0.6,
-                  ease: "power2.out",
-                },
-                ">-0.05",
-              );
-            if (parent) {
-              tl.fromTo(
-                parent,
-                { y: 2 },
-                { y: 0, duration: 0.12, ease: "power2.out" },
-                0.3,
-              );
-            }
+            }).to(
+              el,
+              {
+                boxShadow: "0 0 0 14px rgba(217,67,44,0)",
+                duration: 0.6,
+                ease: "power2.out",
+                startAt: { boxShadow: "0 0 0 0 rgba(217,67,44,0.45)" },
+                immediateRender: false,
+              },
+              ">-0.05",
+            );
             break;
           }
           case "parallax":

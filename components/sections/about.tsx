@@ -8,7 +8,7 @@ import { GhostKanji } from "@/components/system/ghost-kanji";
 
 export function About() {
   return (
-    <Section id="about" surface="paper" className="relative overflow-x-clip">
+    <Section id="about" surface="paper" className="relative overflow-clip">
       <GhostKanji glyph="私" side="right" anchor="top" />
       <Container className="relative z-10">
         <div className="grid items-center gap-12 lg:grid-cols-[5fr_7fr] lg:gap-16">

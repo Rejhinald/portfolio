@@ -11,7 +11,7 @@ export function Archive() {
     <Section
       id="archive"
       surface="paper-3"
-      className="relative overflow-x-clip"
+      className="relative overflow-clip"
     >
       <GhostKanji glyph="蔵" side="right" anchor="bottom" variant="solid" />
       <Container className="relative z-10">

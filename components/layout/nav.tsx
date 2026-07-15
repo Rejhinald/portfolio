@@ -13,13 +13,19 @@ export function Nav() {
   const [active, setActive] = useState<string | null>(null);
   const { scrollY } = useScroll();
 
-  // Track which section is in view so its nav link carries the shu stamp-dot.
+  // Track which section is in view so its nav link carries the shu stamp-dot;
+  // clears when no section occupies the band (e.g. back at the hero).
   useEffect(() => {
+    const visible = new Set<string>();
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
-          if (e.isIntersecting) setActive(`#${e.target.id}`);
+          const href = `#${e.target.id}`;
+          if (e.isIntersecting) visible.add(href);
+          else visible.delete(href);
         }
+        const last = [...visible].pop() ?? null;
+        setActive(last);
       },
       { rootMargin: "-40% 0px -55% 0px" },
     );

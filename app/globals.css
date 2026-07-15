@@ -90,6 +90,10 @@
     outline: 2px solid var(--wa-shu);
     outline-offset: 2px;
   }
+  /* On vermillion surfaces a shu ring is invisible — use paper there. */
+  .bg-shu :focus-visible {
+    outline-color: var(--wa-paper);
+  }
   footer ::selection {
     background: var(--wa-shu);
     color: var(--wa-paper);

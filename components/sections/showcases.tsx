@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Section } from "@/components/system/section";
@@ -19,6 +19,21 @@ import { KkbShowcase } from "@/components/showcases/kkb-showcase";
 gsap.registerPlugin(ScrollTrigger);
 
 const NUMERALS = ["壱", "弐", "参", "肆", "伍"];
+
+const REDUCE_MQ = "(prefers-reduced-motion: reduce)";
+
+/** Live prefers-reduced-motion, kept in sync with the CSS motion-safe variants. */
+function useReducedMotion(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia(REDUCE_MQ);
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(REDUCE_MQ).matches,
+    () => false,
+  );
+}
 
 const recreations: Record<Showcase["key"], () => React.ReactNode> = {
   avorino: AvorinoShowcase,
@@ -55,16 +70,16 @@ function MetaRow({ label, value }: { label: string; value: string }) {
 export function Showcases() {
   const [flagship, ...rest] = showcases;
   const [active, setActive] = useState(0);
+  const reduced = useReducedMotion();
   const railInner = useRef<HTMLDivElement>(null);
   const frameRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const firstRun = useRef(true);
 
-  // Per-frame triggers drive the rail's active project (desktop, motion-safe).
+  // Per-frame triggers drive the rail's active project. Wired at every width
+  // (cheap; the rail is CSS-hidden below lg) so a resize across the lg
+  // breakpoint never leaves a visible-but-frozen rail.
   useEffect(() => {
-    if (
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-      window.innerWidth < 1024
-    )
-      return;
+    if (reduced) return;
     const ctx = gsap.context(() => {
       frameRefs.current.forEach((el, i) => {
         if (!el) return;
@@ -79,18 +94,21 @@ export function Showcases() {
       });
     });
     return () => ctx.revert();
-  }, []);
+  }, [reduced]);
 
-  // Crossfade the rail content when the active project changes.
+  // Crossfade the rail content when the active project changes (not on mount).
   useEffect(() => {
-    if (!railInner.current) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (firstRun.current) {
+      firstRun.current = false;
+      return;
+    }
+    if (!railInner.current || reduced) return;
     gsap.fromTo(
       railInner.current,
       { opacity: 0.2, y: 10 },
-      { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" },
+      { opacity: 1, y: 0, duration: 0.35, ease: "power2.out", overwrite: "auto" },
     );
-  }, [active]);
+  }, [active, reduced]);
 
   const current = rest[active];
 
@@ -181,7 +199,9 @@ export function Showcases() {
 
       {/* ── Kanji Spine: sticky index rail + remaining courses ── */}
       <Container className="mt-20">
-        <div className="lg:grid lg:grid-cols-[4fr_8fr] lg:gap-12">
+        {/* Two-column template only when the rail can actually show (motion-safe);
+            under reduced motion the frames take the full width. */}
+        <div className="lg:motion-safe:grid lg:motion-safe:grid-cols-[4fr_8fr] lg:motion-safe:gap-12">
           <div className="hidden lg:motion-safe:block">
             <div className="sticky top-28">
               <div ref={railInner}>

@@ -49,7 +49,7 @@ export function Contact() {
   ];
 
   return (
-    <Section id="contact" surface="paper" className="relative overflow-x-clip">
+    <Section id="contact" surface="paper" className="relative overflow-clip">
       <GhostKanji glyph="手紙" side="left" anchor="top" />
       <Container className="relative z-10">
         <div className="grid gap-14 md:grid-cols-2 md:gap-20">
