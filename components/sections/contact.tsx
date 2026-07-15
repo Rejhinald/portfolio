@@ -7,6 +7,8 @@ import { Container } from "@/components/system/container";
 import { Eyebrow } from "@/components/system/eyebrow";
 import { DisplayHeading } from "@/components/system/display-heading";
 import { PillButton } from "@/components/system/pill-button";
+import { Hanko } from "@/components/system/hanko";
+import { GhostKanji } from "@/components/system/ghost-kanji";
 import { profile } from "@/lib/data/profile";
 import { cn } from "@/lib/utils";
 
@@ -47,8 +49,9 @@ export function Contact() {
   ];
 
   return (
-    <Section id="contact" surface="paper">
-      <Container>
+    <Section id="contact" surface="paper" className="relative overflow-x-clip">
+      <GhostKanji glyph="手紙" side="left" anchor="top" />
+      <Container className="relative z-10">
         <div className="grid gap-14 md:grid-cols-2 md:gap-20">
           <div>
             <Eyebrow seal="陸">連絡 · CONTACT</Eyebrow>
@@ -135,6 +138,12 @@ export function Contact() {
                   ? "Sent — thank you!"
                   : "Send message"}
             </button>
+            {status === "sent" && (
+              <p className="flex items-center gap-3 text-sm text-ink-mid">
+                <Hanko glyph="送" size={40} animate={false} />
+                Sealed and sent — I&apos;ll get back to you soon.
+              </p>
+            )}
             {status === "error" && (
               <p className="text-sm text-shu">
                 Something went wrong. Email me directly at {profile.email}.

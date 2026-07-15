@@ -1,4 +1,5 @@
 import { profile } from "@/lib/data/profile";
+import { Hanko } from "@/components/system/hanko";
 
 export function Footer() {
   return (
@@ -35,14 +36,8 @@ export function Footer() {
       </div>
       <div className="wa-container flex items-center justify-between border-t border-white/10 py-6 text-xs text-paper/40">
         <span>© 2026 {profile.name}</span>
-        <span className="inline-flex items-center gap-2">
-          <span
-            className="grid h-7 w-7 place-items-center rounded-[6px] bg-shu text-[11px] text-paper"
-            style={{ fontFamily: "var(--font-display)" }}
-            aria-hidden
-          >
-            桜
-          </span>
+        <span className="inline-flex items-center gap-3">
+          <Hanko glyph="桜" size={34} animate={false} />
           Crafted with GSAP &amp; Three.js
         </span>
       </div>

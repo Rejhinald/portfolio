@@ -25,7 +25,7 @@ export function GhostKanji({
       data-animate="parallax"
       className={cn(
         "display pointer-events-none absolute z-0 select-none leading-none",
-        variant === "stroke" ? "text-stroke-gold opacity-40" : "text-paper-3",
+        variant === "stroke" ? "text-stroke-gold opacity-40" : "text-paper-2",
         side === "left" ? "-left-[0.18em]" : "-right-[0.18em]",
         anchor === "top" ? "-top-[0.1em]" : "-bottom-[0.12em]",
       )}
