@@ -42,8 +42,17 @@ export const skillGroups: SkillGroup[] = [
     items: [
       { name: "Cloudflare Workers", daily: true },
       { name: "Cloudflare R2" },
-      { name: "Google Gemini AI" },
       { name: "JustCall API" },
+    ],
+  },
+  {
+    label: "智",
+    en: "AI & LLMs",
+    items: [
+      { name: "Claude Code", daily: true },
+      { name: "Gemini API", daily: true },
+      { name: "OpenAI Codex" },
+      { name: "LLM integration" },
     ],
   },
 ];

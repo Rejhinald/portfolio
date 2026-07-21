@@ -25,7 +25,7 @@ export function Skills() {
           </p>
         </div>
 
-        <div className="mt-14 grid gap-12 lg:grid-cols-[5fr_4fr_3fr] lg:gap-10">
+        <div className="mt-14 grid gap-12 md:grid-cols-2 lg:grid-cols-[4fr_3fr_3fr_3fr] lg:gap-8">
           {skillGroups.map((group) => (
             <div
               key={group.en}
