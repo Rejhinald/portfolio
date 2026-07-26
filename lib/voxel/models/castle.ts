@@ -384,9 +384,21 @@ function tenshuRoof(
   let y = wallTop;
   const hipTrack: [number, number][] = [];
   for (let r = eave; r > stopAt; r--) {
-    if (r < eave && (eave - r) % 2 === 0) y++;
+    const stepped = r < eave && (eave - r) % 2 === 0;
+    if (stepped) y++;
+
     if (r === eave) ringShaped(grid, ox, oz, y, r, "roofstair", HALF.BOTTOM);
     else roofAnnulus(grid, ox, oz, y, r, r);
+
+    // 支輪 UNDERSTAIR. Where the course steps up, the cell below it is empty and
+    // the slope drops a full block at once — a hard stair-step that reads as
+    // terracing however fine the pitch is. An UPSIDE-DOWN stair there fills the
+    // top half of that cell, so the drop becomes half a block and the underside
+    // reads as a continuous soffit instead of a flight of steps. It also gives
+    // the overhanging course something to visibly sit on.
+    if (stepped) {
+      ringShaped(grid, ox, oz, y - 1, r, "roofstair", HALF.TOP);
+    }
     hipTrack.push([r, y]);
   }
 
@@ -670,10 +682,10 @@ export function buildCastle(
     // composition is podium -> tower, not storey -> storey.
     //
     // Roofs are 3-row aprons; wall rows dominate (32 wall : ~14 roof = 2.3:1).
-    { y0: 13, y1: 19, half: 17, overhang: 3, gable: "z" },
-    { y0: 22, y1: 28, half: 15, overhang: 3, gable: "x" },
-    { y0: 31, y1: 36, half: 13, overhang: 3, gable: "z" },
-    { y0: 39, y1: 44, half: 11, overhang: 3, gable: "x" },
+    { y0: 13, y1: 19, half: 17, overhang: 5, gable: "z" },
+    { y0: 22, y1: 28, half: 15, overhang: 5, gable: "x" },
+    { y0: 31, y1: 36, half: 13, overhang: 4, gable: "z" },
+    { y0: 39, y1: 44, half: 11, overhang: 4, gable: "x" },
     { y0: 47, y1: 52, half: 9, overhang: 3, gable: "z" },
   ];
 
