@@ -301,6 +301,43 @@ function roofAnnulus(
     }
 }
 
+/**
+ * 裳階 mokoshi — the skirt roof.
+ *
+ * A subsidiary roof band wrapping the tower PARTWAY UP a storey, below that
+ * storey's own roof. It is not an eave and not a tier: it is a decorative pent
+ * roof whose whole job is to make the tower read as having more storeys than it
+ * structurally has, by breaking a tall wall into two banded registers.
+ *
+ * This is what the reference has that no amount of thickening an existing eave
+ * could reproduce — the missing element was a whole extra roof, not more trim on
+ * the ones already there.
+ *
+ * Two courses so it has its own visible thickness: green tiles with a thin slab
+ * tip, over a dark soffit. It deliberately projects LESS than the main eave
+ * above it, so the silhouette still steps outward as it descends.
+ */
+function mokoshi(
+  grid: VoxelGrid,
+  ox: number,
+  oz: number,
+  y: number,
+  wallHalf: number,
+  project: number,
+): void {
+  const tip = wallHalf + project;
+  roofAnnulus(grid, ox, oz, y, wallHalf + 1, tip - 1);
+  ringShaped(grid, ox, oz, y, tip, "roofslab", HALF.BOTTOM);
+  // Dark underside, one course down, so the band reads as a solid mass from
+  // below rather than as a paper flange.
+  annulus(grid, ox, oz, y - 1, wallHalf + 1, tip, "ridge");
+  // Gilt bracket at each corner, matching the main eaves' language.
+  for (const sx of [-1, 1] as const)
+    for (const sz of [-1, 1] as const) {
+      grid.set(ox + sx * tip, y, oz + sz * tip, "gold");
+    }
+}
+
 /** Outer radius of a tier's eave. */
 const eaveRadius = (wallHalf: number, overhang: number) => wallHalf + overhang;
 
@@ -669,6 +706,22 @@ export function buildCastle(
     // Relief BEFORE the roof and gable, so those overwrite it where they meet
     // rather than leaving pilasters poking through an eave.
     wallRelief(grid, ox, oz, y0, y1, half, WOOD[Math.min(i, WOOD.length - 1)]);
+
+    // A skirt roof only makes sense on a storey with enough wall to divide —
+    // on a short one it would simply collide with its own eave.
+    if (y1 - y0 >= 5 && half >= 9) {
+      // Projection must stay clear of the main eave's soffit, which reaches
+      // eave-1 = half+overhang-1; overlapping it left a half-block gap where the
+      // skirt's slab tip met the soffit above.
+      mokoshi(
+        grid,
+        ox,
+        oz,
+        y0 + Math.floor((y1 - y0) / 2) + 1,
+        half,
+        Math.max(2, overhang - 2),
+      );
+    }
 
     tenshuRoof(grid, ox, oz, y1, half, overhang, nextHalf);
     // Large: in the reference the gable spans most of the wall it sits on,
