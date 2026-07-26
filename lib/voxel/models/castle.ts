@@ -266,6 +266,9 @@ function roofAnnulus(
     }
 }
 
+/** Outer radius of a tier's eave. */
+const eaveRadius = (wallHalf: number, overhang: number) => wallHalf + overhang;
+
 /**
  * One tiered roof. `wallTop` is the last wall row and `wallHalf` the wall's
  * half-width; the shell descends outward from a ridge plate to a dark eave
@@ -295,11 +298,38 @@ function tenshuRoof(
     const inner = ridgeHalf + (i - 1) * 2 + 1;
     roofAnnulus(grid, ox, oz, top - i, inner, inner + 1);
   }
+
+  // ── 降り棟 kudari-mune: raised hip ridges ──
+  //
+  // The roof FIELD was the last flat surface. Edge trim alone could not fix it,
+  // because a stepped ramp with detail only at its rim is still a ramp. This is
+  // the walls' treatment applied to the roof: a line standing a full block PROUD
+  // of the tile surface, running down each 45-degree hip from the ridge plate to
+  // the eave corner, so it catches light on top and throws a shadow across the
+  // tiles beside it.
+  //
+  // It is also what a real tenshu has — every hip of every tier carries one — and
+  // it is what turns four flat planes into a roof with edges.
+  const hip = (r: number, y: number) => {
+    for (const sx of [-1, 1] as const)
+      for (const sz of [-1, 1] as const) {
+        grid.set(ox + sx * r, y, oz + sz * r, "ridge");
+      }
+  };
+  for (let i = 1; i < courses - 1; i++) {
+    const inner = ridgeHalf + (i - 1) * 2 + 1;
+    // One course higher than the tiles it rides on, hence the +1.
+    hip(inner, top - i + 1);
+    hip(inner + 1, top - i + 1);
+  }
+  // Carry the hip down onto the eave course so it reaches the upturned corner
+  // rather than stopping short in mid-slope.
+  hip(eaveRadius(wallHalf, overhang) - 1, wallTop + 1);
   // ── the eave, at half-block resolution ──
   // This edge is the whole character of the roof, and it is where the reference
   // build spends its slabs and stairs. Cubes here give a blunt, stepped rim;
   // stairs give a true slope and a slab tip gives the flare beyond it.
-  const eave = wallHalf + overhang;
+  const eave = eaveRadius(wallHalf, overhang);
 
   // Sloped eave course, then the flared slab tip half a block lower.
   ringShaped(grid, ox, oz, wallTop, eave - 1, "roofstair", HALF.BOTTOM);
