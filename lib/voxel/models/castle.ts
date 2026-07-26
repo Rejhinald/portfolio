@@ -181,33 +181,32 @@ function tenshuRoof(
   // stairs give a true slope and a slab tip gives the flare beyond it.
   const eave = wallHalf + overhang;
 
-  // Quartz cornice: upside-down stairs tucked under the eave, so the wall head
-  // reads as a moulded lip rather than a butt joint.
-  ringShaped(grid, ox, oz, wallTop - 1, wallHalf, "quartzstair", HALF.TOP);
-
   // Sloped eave course, then the flared slab tip half a block lower.
   ringShaped(grid, ox, oz, wallTop, eave - 1, "roofstair", HALF.BOTTOM);
   ringShaped(grid, ox, oz, wallTop, eave, "roofslab", HALF.BOTTOM);
   // Dark deck border under the tip — the eave's shadow line.
-  ringShaped(grid, ox, oz, wallTop - 1, eave, "ridgeslab", HALF.TOP);
+  //
+  // A FULL cube, not a half slab. As a TOP-half slab it met the bottom slab above
+  // it correctly, but left a half-block of air below itself, which stranded
+  // whatever sat one cell under the eave — the tier below's gable finial, and any
+  // leaves the sakura pushed under the overhang.
+  annulus(grid, ox, oz, wallTop - 1, eave, eave, "ridge");
 
   // 反り — the corner flicked up turns a stepped eave into a curved one, which
   // is where the eye lands on a real tenshu. Gold tips it.
+  //
+  // The corner MUST be a full cube, not another bottom slab: two bottom slabs in
+  // adjacent cells each fill only their lower half, leaving a half-block of air
+  // between them that reads on screen as a floating block. A full cube spans the
+  // whole cell, so it meets the slab below and the gold above with no gap.
   for (const [sx, sz] of [
     [-1, -1],
     [1, -1],
     [-1, 1],
     [1, 1],
   ] as const) {
-    grid.setShaped(
-      ox + sx * eave,
-      wallTop + 1,
-      oz + sz * eave,
-      "roofslab",
-      outwardFacing(sx, sz),
-      HALF.BOTTOM,
-    );
-    grid.set(ox + sx * eave, wallTop + 2, oz + sz * eave, "gold");
+    grid.set(ox + sx * eave, wallTop, oz + sz * eave, "roofdark");
+    grid.set(ox + sx * eave, wallTop + 1, oz + sz * eave, "gold");
   }
 }
 

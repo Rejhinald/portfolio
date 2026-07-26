@@ -8,7 +8,6 @@ import { PALETTE } from "@/lib/three/palette";
 import { createVoxelIsland } from "./voxel-island";
 import { createPetalField } from "@/lib/three/diorama-petals";
 import { createMist } from "@/lib/three/mist";
-import { createLightShafts } from "@/lib/three/god-rays";
 
 function envTier() {
   const nav = navigator as Navigator & { deviceMemory?: number };
@@ -72,12 +71,10 @@ export function HanamiDiorama({ className }: { className?: string }) {
         // than brightness, and the sun exists mainly to cast the static shadow.
         scene.add(new THREE.AmbientLight(0xffffff, 0.68));
         scene.add(new THREE.HemisphereLight(PALETTE.sora, PALETTE.wakaba, 0.22));
-        // Sun sits high, left and IN FRONT (+Z is toward the camera), so it lights
-        // the tenshu's visible face. A sun behind the building would give stronger
-        // shafts but silhouette the subject, which is the opposite of the brief.
-        const SUN_POS = new THREE.Vector3(-6, 9.5, 7);
+        // Sun sits high, left and IN FRONT (+Z is toward the camera) so it lights
+        // the tenshu's visible face rather than silhouetting it.
         const sun = new THREE.DirectionalLight(0xfff4e0, 0.25);
-        sun.position.copy(SUN_POS);
+        sun.position.set(-6, 9.5, 7);
         sun.name = "sun";
         scene.add(sun);
 
@@ -136,34 +133,12 @@ export function HanamiDiorama({ className }: { className?: string }) {
         mist.mesh.position.set(ISLAND_X, wide ? 0.85 : 0.6, 0);
         scene.add(mist.mesh);
 
-        // Sit ABOVE the island's grass plane and tilt down ~10°, so the surface
-        // — grass ring, approach path, torii footing — actually reads. Level
-        // with it the top face went edge-on and the island looked like a plate;
-        // much steeper and a building this tall stops reading as a tower.
-        // The aim point stays BELOW the island so the tenshu keeps the upper
-        // half of the frame and clears the nav.
-        // A taller tenshu (the stone plinth added ~9 courses) needs both a
-        // longer lens distance and a shallower tilt, or the finial clips the nav.
-        // God rays: a fan of additive blades along the sun's travel direction,
-        // anchored above and in front of the island so the shafts sweep down past
-        // the tenshu rather than out from behind it.
-        // Kept SHORT and high: additive light can only read against the blue upper
-        // sky. Extended down into the washi-paper half of the hero it desaturates
-        // the background instead of brightening it, and looks like smudges.
-        const shafts = createLightShafts({
-          direction: new THREE.Vector3(0, 0, 0).sub(SUN_POS).normalize(),
-          viewDir: new THREE.Vector3(0, 0, 1),
-          count: tier.tier === "full" ? 8 : 5,
-          length: 9.5,
-          spread: 7,
-          intensity: tier.tier === "full" ? 0.26 : 0.2,
-          color: 0xfff6e4,
-          animate: tier.animate,
-        });
-        shafts.group.position.copy(SUN_POS).multiplyScalar(0.52);
-        shafts.group.position.y += 2.4;
-        scene.add(shafts.group);
-
+        // Sit ABOVE the island's grass plane and tilt down slightly, so the
+        // surface — grass ring, approach path, torii footing — actually reads.
+        // Level with it the top face went edge-on and the island looked like a
+        // flat plate; much steeper and a building this tall stops reading as a
+        // tower. The aim point stays BELOW the island so the tenshu keeps the
+        // upper half of the frame and its finial clears the nav.
         const baseCam = new THREE.Vector3(
           0,
           BASE_Y + (wide ? 0.8 : 0.95),
@@ -188,13 +163,11 @@ export function HanamiDiorama({ className }: { className?: string }) {
 
         if (!tier.animate) {
           holder.rotation.y = -0.25;
-          shafts.update(0);
           return { render: "once" };
         }
 
         return (t: number) => {
           time.value = t;
-          shafts.update(t);
           holder.rotation.y = Math.sin(t * 0.12) * 0.45 - 0.1;
           holder.position.y = BASE_Y + Math.sin(t * 0.6) * 0.08;
           petals?.update(t);

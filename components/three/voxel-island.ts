@@ -6,6 +6,7 @@ import { VoxelGrid } from "@/lib/voxel/grid";
 import { meshGrid } from "@/lib/voxel/mesher";
 import { createVoxelMaterial } from "@/lib/voxel/material";
 import { paintLight } from "@/lib/voxel/light";
+import { pruneOrphans } from "@/lib/voxel/prune";
 import { buildIsland } from "@/lib/voxel/models/island";
 import { buildCastle } from "@/lib/voxel/models/castle";
 import { buildSakuraTree } from "@/lib/voxel/models/tree";
@@ -59,6 +60,10 @@ export function createVoxelIsland(opts: VoxelIslandOpts): VoxelIsland {
     density: opts.tier === "static" ? 0.7 : opts.tier === "reduced" ? 0.55 : 1,
     keepClear: (x, z) => Math.abs(x) <= 2 && z > 14, // the approach + gate mouth
   });
+
+  // Sweep stranded blocks (the canopy's hole-punching strands a few leaves) —
+  // one detached cube in mid air reads instantly as a bug.
+  pruneOrphans(grid);
 
   // Paint light before meshing: shading is baked into vertex colours, so the
   // eave shadows and grounded base have to exist on the grid first.
