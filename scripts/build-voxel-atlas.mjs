@@ -63,6 +63,11 @@ const TINT = {
   grass: [0x9c, 0xb8, 0x72], // wakaba, lifted a little so it reads at distance
   foliage: [0x8f, 0xa8, 0x6b],
   sakura: [0xff, 0xff, 0xff], // cherry textures are already pink — no tint
+  // Water ships greyscale (water_still frame 0 measures a flat 177,177,177) and
+  // Minecraft tints it per biome. Deep rather than tropical: the island's
+  // underside dissolves into `--wa-paper` via the height haze, and a paler tint
+  // left the fall as a grey smudge the moment it cleared the rim.
+  water: [0x3f, 0x86, 0xbe],
 };
 
 /**
@@ -169,6 +174,16 @@ const TILES = [
   // Traditional red window. The reference's openings are a warm red-brown, and
   // near-black iron bars merged into the wall's shadows at any distance.
   { key: "redwindow", src: "red_nether_bricks" },
+  // Water, both states, as Minecraft itself separates them: `water_still` for a
+  // level surface and `water_flow` for anything falling or running. The flow
+  // texture carries directional streaks, which is what makes a fall read as
+  // moving even before the shader scrolls it.
+  //
+  // Both are animated strips needing the frame-0 crop — still is 16x512 (32
+  // frames), flow is 32x1024 (32 frames at 32px). The loader takes a
+  // width x width frame and downscales, so the wider one needs nothing special.
+  { key: "water", src: "water_still", frame0: true, tint: TINT.water },
+  { key: "waterFlow", src: "water_flow", frame0: true, tint: TINT.water },
 ];
 
 if (TILES.length > GRID * GRID) {

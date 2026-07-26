@@ -144,6 +144,70 @@ function stampShell(grid: VoxelGrid, ox: number, oz: number): void {
   }
 }
 
+const ROOF_IDS = new Set<BlockId>([
+  "roof",
+  "roofplain",
+  "roofdark",
+  "roofslab",
+  "roofstair",
+  "ridge",
+  "ridgeslab",
+  "ridgestair",
+]);
+
+/**
+ * Hang lanterns on chains under the eaves.
+ *
+ * These used to be placed by the roof generator, which knew exactly where each
+ * eave was. The generator is gone, so the positions are FOUND instead: walk the
+ * stamped shell for a roof block with two empty cells beneath it, which is the
+ * definition of an overhang, and hang there.
+ *
+ * Two rules keep it from turning into bunting. Only the outermost such cell on
+ * each row is used, so lanterns hang at the eave TIP where they silhouette
+ * against sky rather than tucked against the wall; and they are spaced along the
+ * run, because one every block reads as a fringe rather than as lanterns.
+ */
+function hangEaveLanterns(grid: VoxelGrid, ox: number, oz: number): void {
+  const R = SHELL_FOOTPRINT.half;
+  const hangs: [number, number, number][] = [];
+
+  for (let y = SHELL_BASE_Y + 4; y <= SHELL_BASE_Y + 60; y++) {
+    // Outermost overhang cell per (row, side), found by scanning inward.
+    for (let t = -R; t <= R; t++) {
+      for (const [ax, az] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ] as const) {
+        for (let d = R; d > 4; d--) {
+          const x = ox + (ax !== 0 ? ax * d : t);
+          const z = oz + (az !== 0 ? az * d : t);
+          const id = grid.get(x, y, z);
+          if (!id) continue;
+          if (!ROOF_IDS.has(id)) break;
+          if (!grid.has(x, y - 1, z) && !grid.has(x, y - 2, z)) {
+            hangs.push([x, y, z]);
+          }
+          break; // outermost solid on this row, whatever it was
+        }
+      }
+    }
+  }
+
+  // Space them out along each eave run.
+  let placed = 0;
+  for (const [x, y, z] of hangs) {
+    if ((Math.abs(x - ox) + Math.abs(z - oz) + y) % 6 !== 0) continue;
+    if (grid.has(x, y - 1, z) || grid.has(x, y - 2, z)) continue;
+    grid.set(x, y - 1, z, "chain");
+    grid.set(x, y - 2, z, "hanglantern");
+    placed++;
+  }
+  void placed;
+}
+
 export function buildCastle(
   grid: VoxelGrid,
   ox: number,
@@ -176,6 +240,7 @@ export function buildCastle(
 
   // ── the tenshu itself ──
   stampShell(grid, ox, oz);
+  hangEaveLanterns(grid, ox, oz);
 
   // Stone lanterns flanking the gate, on the plinth ledge. The transcribed
   // tenshu's own base reaches half 22, so these sit outside that on the ledge

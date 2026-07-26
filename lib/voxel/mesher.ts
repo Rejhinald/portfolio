@@ -46,6 +46,8 @@ type Buffers = {
   /** Night colour, blended toward by a uniform — see `nightColour`. */
   night: number[];
   sway: number[];
+  /** 1 = scroll this vertex's UV inside its atlas tile (flowing water). */
+  flow: number[];
   idx: number[];
 };
 
@@ -56,6 +58,7 @@ const newBuffers = (): Buffers => ({
   col: [],
   night: [],
   sway: [],
+  flow: [],
   idx: [],
 });
 
@@ -184,6 +187,7 @@ function emitBoxFace(
 
   const base = b.pos.length / 3;
   const swayTop = def.foliage ? 1 : 0;
+  const flow = def.flow ? 1 : 0;
 
   for (let i = 0; i < 4; i++) {
     const [su, sv] = CORNERS[i];
@@ -218,6 +222,7 @@ function emitBoxFace(
     );
     b.night.push(nr, ng, nb);
     b.sway.push(swayTop && l[1] > 0.5 ? 1 : swayTop * 0.35);
+    b.flow.push(flow);
   }
 
   // 0fps anisotropy fix: flip the diagonal so it faces the darkest corner,
@@ -289,6 +294,7 @@ function emitPlant(
       b.col.push(PLANT_SHADE, PLANT_SHADE, PLANT_SHADE);
       b.night.push(nightPlant[0], nightPlant[1], nightPlant[2]);
       b.sway.push(i >= 2 ? 1 : 0); // only the top edge leans
+      b.flow.push(0);
     }
     b.idx.push(base, base + 1, base + 3, base, base + 3, base + 2);
   };
@@ -317,6 +323,7 @@ function emitPlant(
       b.col.push(PLANT_SHADE, PLANT_SHADE, PLANT_SHADE);
       b.night.push(nightPlant[0], nightPlant[1], nightPlant[2]);
       b.sway.push(0);
+      b.flow.push(0);
     }
     b.idx.push(base, base + 1, base + 3, base, base + 3, base + 2);
     return;
@@ -335,6 +342,7 @@ function toGeometry(b: Buffers): THREE.BufferGeometry {
   g.setAttribute("color", new THREE.Float32BufferAttribute(b.col, 3));
   g.setAttribute("aNight", new THREE.Float32BufferAttribute(b.night, 3));
   g.setAttribute("aSway", new THREE.Float32BufferAttribute(b.sway, 1));
+  g.setAttribute("aFlow", new THREE.Float32BufferAttribute(b.flow, 1));
   g.setIndex(b.idx);
   g.computeBoundingSphere();
   return g;

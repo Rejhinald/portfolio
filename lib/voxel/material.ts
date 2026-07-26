@@ -69,11 +69,20 @@ export function createVoxelMaterial(
         /* glsl */ `
         #include <common>
         attribute float aSway;
+        attribute float aFlow;
         attribute vec3 aNight;
         uniform float uTime;
         uniform float uWindAmp;
         uniform float uNight;
         varying float vLocalY;
+        varying float vFlow;
+      `,
+      )
+      .replace(
+        "#include <uv_vertex>",
+        /* glsl */ `
+        #include <uv_vertex>
+        vFlow = aFlow;
       `,
       )
       // Cross-fade the two baked lighting solutions. `<color_vertex>` has just
@@ -122,7 +131,34 @@ export function createVoxelMaterial(
         uniform vec3 uHazeColor;
         uniform float uHazeTop;
         uniform float uHazeBottom;
+        uniform float uTime;
         varying float vLocalY;
+        varying float vFlow;
+      `,
+      )
+      // Flowing water. The atlas is a 16x16 grid, so a tile is 1/16 of UV space;
+      // scrolling within that cell animates the surface without a second frame.
+      //
+      // Two things this has to respect. Varyings are read-only in the fragment
+      // stage, so vMapUv cannot be nudged in place — the map chunk is replaced
+      // with its own sample. And the scroll is kept inside 0.04..0.96 of the
+      // cell rather than wrapping the full 0..1: a true fract() would sample
+      // across the tile border into whatever block sits next to water in the
+      // atlas, which is exactly the bleeding the half-texel inset exists to stop.
+      .replace(
+        "#include <map_fragment>",
+        /* glsl */ `
+        #ifdef USE_MAP
+          vec2 flowUv = vMapUv;
+          if ( vFlow > 0.5 ) {
+            vec2 cell = floor( vMapUv * 16.0 );
+            vec2 local = vMapUv * 16.0 - cell;
+            local.y = 0.04 + fract( local.y + uTime * 0.22 ) * 0.92;
+            flowUv = ( cell + local ) / 16.0;
+          }
+          vec4 sampledDiffuseColor = texture2D( map, flowUv );
+          diffuseColor *= sampledDiffuseColor;
+        #endif
       `,
       )
       // Height haze last, so the island's underside dissolves into the page.

@@ -11,6 +11,7 @@ import { buildIsland } from "@/lib/voxel/models/island";
 import { buildCastle } from "@/lib/voxel/models/castle";
 import { buildSakuraTree } from "@/lib/voxel/models/tree";
 import { buildTorii } from "@/lib/voxel/models/dressing";
+import { buildWaterfall } from "@/lib/voxel/models/waterfall";
 import { buildGroundCover } from "@/lib/voxel/models/groundcover";
 import type { Tier } from "@/lib/three/quality";
 
@@ -59,6 +60,9 @@ export function createVoxelIsland(opts: VoxelIslandOpts): VoxelIsland {
   buildCastle(grid, 0, 0, rng);
   buildSakuraTree(grid, -36, 12, rng);
   buildTorii(grid, 0, 39);
+  // After the terrain and castle, since it reads the finished surface to cut
+  // its channel, and before ground cover so nothing sprouts in the stream.
+  buildWaterfall(grid, rng);
 
   // Bonemeal pass — last, so it can see the finished surface and skip the paved
   // approach and anything already standing on the grass.

@@ -89,6 +89,8 @@ export type BlockId =
   | "hanglantern"
   | "chain"
   | "glow"
+  | "water"
+  | "waterfall"
   // sub-cube variants — the real build's roofs are made of these
   | "roofslab"
   | "roofstair"
@@ -106,6 +108,13 @@ export type BlockDef = {
   cutout?: boolean;
   /** Sways in the wind (foliage); top vertices lean, base stays anchored. */
   foliage?: boolean;
+  /**
+   * Flowing water: the fragment shader scrolls this block's UV DOWN inside its
+   * own atlas tile. Vanilla animates water by cycling 32 stacked frames; one
+   * scrolling frame costs a single atlas slot instead of 32 and reads the same
+   * at this block size, where a tile is roughly 13 device pixels.
+   */
+  flow?: boolean;
   /** Does not occlude neighbours for AO/culling purposes (like MC glass/leaves). */
   transparent?: boolean;
   /**
@@ -249,6 +258,13 @@ export const BLOCKS: Record<BlockId, BlockDef> = {
     emission: 11,
   },
   gold: { faces: all(TILE.gold) },
+  // Opaque, not transparent: a see-through fall over the void showed the
+  // island's underside through it and read as a glitch rather than as water.
+  water: { faces: all(TILE.water), flow: true },
+  // Falling water uses Minecraft's own `water_flow` texture, whose vertical
+  // streaks read as motion even in a still frame; the still tile on a falling
+  // column looks like a blue wall.
+  waterfall: { faces: all(TILE.waterFlow), flow: true },
   shu: { faces: all(TILE.shu) },
   lantern: { faces: all(TILE.lanternLit), emission: 15 },
   // Hung under the eaves on a chain. Both are sub-cube, so neither may occlude
