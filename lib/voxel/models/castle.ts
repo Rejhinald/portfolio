@@ -363,76 +363,46 @@ function tenshuRoof(
   overhang: number,
   nextHalf: number,
 ): void {
-  // ── a genuinely PITCHED roof ──
+  // ── roof APRON, dying into the wall above ──
   //
-  // This was the shape problem underneath every previous detailing pass. The
-  // roof used to be stacked 2-wide annuli of full cubes stepping outward: a
-  // TERRACE, not a slope. No amount of ridging, banding or trim fixes a roof
-  // whose section is a staircase of flat rings.
+  // Measured from the reference world save, and it overturns what was here:
+  //   - pitch is a DEAD CONSTANT 2 horizontal : 1 vertical. No concavity at all;
+  //     the sori curve was invented.
+  //   - roofs are ~3 rows against 7-9 rows of wall (wall:roof ~2.6:1). This
+  //     build had 4 wall rows against 58 roof rows — inverted ~38x.
+  //   - and the decisive one: below the crown, a roof does NOT reach a ridge. It
+  //     runs from the eave inward and DISAPPEARS INTO THE WALL of the storey
+  //     above. Only the top tier is a true hip roof.
   //
-  // Now the radius shrinks continuously from eave to ridge and every course is
-  // capped with an outward-facing stair, so the section is a true triangle with
-  // a half-block bevel on each step.
-  //
-  // The profile is CONCAVE (反り): the radius barely moves over the first few
-  // courses then falls away quickly, which is what distinguishes a Japanese roof
-  // from a cone. pow(c/N, 1.6) gives that curve.
-  //
-  // Gap-free BY CONSTRUCTION: the radius strictly decreases with height, so each
-  // radius is occupied at exactly ONE height and no two courses ever stack —
-  // the half-block-gap failure mode simply cannot arise here. Each course fills
-  // from the next course's outer edge out to its own, keeping the shell closed.
+  // A full pyramid per storey is the pagoda generator: every roof contributes
+  // its own height, the tower stretches, and the taper must steepen to keep up.
   const eave = eaveRadius(wallHalf, overhang);
-  const ridgeHalf = Math.max(1, Math.round(wallHalf * 0.18));
-  const N = roofHeight(wallHalf, overhang);
-  const spanR = eave - ridgeHalf;
-  const hipTrack: [number, number][] = [];
-  const rAt = (c: number): number => (c >= N ? ridgeHalf : eave - Math.round(spanR * Math.pow(c / N, 1.6)));
+  const crown = nextHalf <= 0;
+  // Where the slope stops: the next storey's wall face, or the ridge on top.
+  const stopAt = crown ? 1 : nextHalf;
 
-  // Walk upward, forcing the radius to STRICTLY decrease each course. That is
-  // what guarantees the no-stacking property the gap-freedom depends on: where
-  // the concave curve is nearly flat near the eave it would otherwise repeat a
-  // radius, and a course landing on the same radius as the one below it is
-  // exactly the half-block gap this kept producing.
-  let prevR = eave;
   let y = wallTop;
-  for (let c = 1; c <= N + spanR && prevR > ridgeHalf; c++) {
-    const r = Math.max(ridgeHalf, Math.min(prevR - 1, rAt(c)));
-    y++;
-    // Fill from this course's radius out to just inside the one below, so the
-    // tread is as wide as the curve says and the shell stays closed.
-    roofAnnulus(grid, ox, oz, y, r, prevR - 1);
-    ringShaped(grid, ox, oz, y, r, "roofstair", HALF.BOTTOM);
+  const hipTrack: [number, number][] = [];
+  for (let r = eave; r > stopAt; r--) {
+    if (r < eave && (eave - r) % 2 === 0) y++;
+    if (r === eave) ringShaped(grid, ox, oz, y, r, "roofstair", HALF.BOTTOM);
+    else roofAnnulus(grid, ox, oz, y, r, r);
     hipTrack.push([r, y]);
-    prevR = r;
   }
 
-  // Ridge plate, widened where the storey above needs somewhere to stand.
+  // Plate for the storey above (or the ridge cap on the crown).
   const top = y + 1;
-  annulus(grid, ox, oz, top, 0, Math.max(ridgeHalf, nextHalf), "roof");
+  annulus(grid, ox, oz, top, 0, Math.max(stopAt, nextHalf), "roof");
 
-  // ── 降り棟 kudari-mune: raised hip ridges ──
-  // Masonry, not a line: three wide with a coping course above, standing proud
-  // of the tiles so it throws a shadow band across the field beside it.
-  const hip = (r: number, y: number) => {
-    for (const sx of [-1, 1] as const) {
+  // 降り棟 kudari-mune. ONE block wide, not three: three blocks is enormous
+  // against a 30-block wall and was reading as a structural rib.
+  for (const [r, hy] of hipTrack) {
+    if ((eave - r) % 2 !== 0) continue;
+    for (const sx of [-1, 1] as const)
       for (const sz of [-1, 1] as const) {
-        const cx = ox + sx * r;
-        const cz = oz + sz * r;
-        grid.set(cx, y, cz, "ridge");
-        grid.set(cx - sx, y, cz, "ridge");
-        grid.set(cx, y, cz - sz, "ridge");
-        grid.set(cx, y + 1, cz, "deepslatetiles");
+        grid.set(ox + sx * r, hy + 1, oz + sz * r, "ridge");
       }
-    }
-  };
-  // One per course, riding the same curve as the tiles beneath it.
-  for (const [r, hy] of hipTrack) hip(r, hy);
-  // ── the eave, at half-block resolution ──
-  // This edge is the whole character of the roof, and it is where the reference
-  // build spends its slabs and stairs. Cubes here give a blunt, stepped rim;
-  // stairs give a true slope and a slab tip gives the flare beyond it.
-  // (eave is declared above, with the pitch geometry)
+  }
 
   // ── the eave as a THICK assembly, not a lip ──
   //
@@ -659,7 +629,13 @@ export function buildCastle(
   for (let y = 1; y <= PLINTH_TOP; y++) {
     // Steeper batter: the real 石垣 visibly leans back as it rises, and a
     // near-vertical plinth reads as a box rather than as a fortification.
-    const half = 23 - Math.floor(((y - 1) * 2) / 3);
+    // The FORTRESS PODIUM — the single biggest miss. The reference's complete
+    // silhouette is 95 wide x 75 tall (0.79 tall:wide) because a broad defensive
+    // base carries a slender white tower. My old plinth was 47 wide, i.e. about
+    // the size the TOWER should be, so the whole asset read as just the tower.
+    // At half 33 -> 24 this is ~66 wide against a 34-wide tower: the ~2:1
+    // podium:tower relationship that separates a fortress from a pagoda.
+    const half = 33 - Math.floor(((y - 1) * 3) / 4);
     baseCourse(grid, ox, oz, y, half, PLINTH_TOP);
     // A stair rim caps each batter step so the setbacks read as courses.
     if ((y - 1) % 3 === 2) {
@@ -668,7 +644,7 @@ export function buildCastle(
   }
 
   // Gate mouth in the front face of the plinth, at the head of the approach.
-  const gateZ = 22;
+  const gateZ = 33;
   for (let t = -2; t <= 2; t++)
     for (let y = 1; y <= 4; y++) {
       grid.set(ox + t, y, gateZ, "window");
@@ -688,17 +664,17 @@ export function buildCastle(
     overhang: number;
     gable: "x" | "z";
   }[] = [
-    // Roof heights now come from roofHeight() (~0.45 x eave), so a tier's pitch
-    // is wall rows + roof height. Wall bands are SHORT — 5-6 rows — because the
-    // reference's white bands are thin strips between deep roofs; tall walls and
-    // shallow roofs was the proportion this build had backwards.
-    //   t1 eave 23 -> roof 10   t2 eave 19 -> roof 9
-    //   t3 eave 15 -> roof 7    t4 eave 12 -> roof 5   t5 eave 10 -> roof 5
-    { y0: 13, y1: 18, half: 19, overhang: 4, gable: "z" },
-    { y0: 29, y1: 34, half: 15, overhang: 4, gable: "x" },
-    { y0: 44, y1: 48, half: 12, overhang: 3, gable: "z" },
-    { y0: 56, y1: 60, half: 9, overhang: 3, gable: "x" },
-    { y0: 66, y1: 70, half: 7, overhang: 3, gable: "z" },
+    // Absolute -2 per side rather than a multiplicative taper: 0.79x per storey
+    // removes ~21% of the width each floor and rebuilds a mathematical pyramid.
+    // -2 works out to ~0.86-0.88x here, and the ONE large step in the whole
+    // composition is podium -> tower, not storey -> storey.
+    //
+    // Roofs are 3-row aprons; wall rows dominate (32 wall : ~14 roof = 2.3:1).
+    { y0: 13, y1: 19, half: 17, overhang: 3, gable: "z" },
+    { y0: 22, y1: 28, half: 15, overhang: 3, gable: "x" },
+    { y0: 31, y1: 36, half: 13, overhang: 3, gable: "z" },
+    { y0: 39, y1: 44, half: 11, overhang: 3, gable: "x" },
+    { y0: 47, y1: 52, half: 9, overhang: 3, gable: "z" },
   ];
 
   /**
@@ -818,9 +794,12 @@ export function buildCastle(
     // Larger and steeper. The gable is the build's strongest graphic element and
     // the one the eye reads first; at 0.62 of the wall it was competing with the
     // roofs rather than anchoring the facade.
-    const gw = Math.max(3, Math.round(half * 0.8));
-    const gh = Math.max(3, Math.round(gw * 0.62));
-    gable(grid, ox, oz, y1 + 2, half, gw, gh, tier.gable);
+const gw = Math.max(3, Math.round(half * 0.7));
+    // Shallower, and only on alternating tiers. A dormer on every storey adds a
+    // triangular peak per floor — more vertical noise, and the tall ones were
+    // climbing into the eave of the tier above.
+    const gh = Math.max(3, Math.round(gw * 0.45));
+    if (i % 2 === 0) gable(grid, ox, oz, y1 + 2, half, gw, gh, tier.gable);
   });
 
   // Gold finial crowning the ridge.

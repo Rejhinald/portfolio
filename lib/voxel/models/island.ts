@@ -14,7 +14,7 @@ const STONE_TOP_Y = -6;
 const TIP_Y = -28;
 
 /** Loop bound — nothing on the island reaches further out than this. */
-const BOUND = 36;
+const BOUND = 46;
 
 /**
  * Which rock sits at a point in the crag.
@@ -110,7 +110,7 @@ export function buildIsland(grid: VoxelGrid, rng: () => number): void {
   // the rim wobbles between ~19 and ~22 blocks instead of being a circle.
   const SAMPLES = 32;
   const rim: number[] = [];
-  for (let i = 0; i < SAMPLES; i++) rim.push(randRange(rng, 30, 34));
+  for (let i = 0; i < SAMPLES; i++) rim.push(randRange(rng, 40, 44));
 
   /** Rim radius for a direction (radians), smoothly interpolated + wrapped. */
   const rimAt = (angle: number): number => {
@@ -222,10 +222,10 @@ export function buildIsland(grid: VoxelGrid, rng: () => number): void {
     // Linear taper = straight sides in section, i.e. a wedge. Two abrupt
     // shelves break the silhouette so it is a stack of slabs, not one cone.
     const step = t > 0.42 ? 1.8 : 0;
-    const r = Math.max(0.8, 25 * (1 - t) - step + randRange(rng, -0.7, 0.7));
+    const r = Math.max(0.8, 33 * (1 - t) - step + randRange(rng, -0.7, 0.7));
     slabIndexed(
       y,
-      (idx, rim) => r * facetRadius(cosA, idx) + 0.22 * (rim - 32),
+      (idx, rim) => r * facetRadius(cosA, idx) + 0.22 * (rim - 42),
       (x, z) => rockAt(x, y, z, t),
     );
   }

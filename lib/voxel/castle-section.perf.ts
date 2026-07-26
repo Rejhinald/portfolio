@@ -84,23 +84,28 @@ describe("MEASURE", () => {
     // A "roof row" is one whose dominant material is roof/ridge; a "wall row" is
     // one dominated by plaster. Counting them straight off the grid is what makes
     // this comparable to the reference numbers rather than a matter of opinion.
+    // Classify by PRESENCE, not by which material has the most blocks.
+    // Counting the dominant symbol overstates roofs badly: an apron is a wide
+    // annulus while a wall is a thin ring, so roof always wins on block count
+    // even on rows where the wall is the visible mass. What matters visually is
+    // how many rows are wall, and how many are roof and NOTHING else.
     let wallRows = 0;
     let roofRows = 0;
     const kinds: string[] = [];
     for (let y = 1; y <= maxY; y++) {
-      const tally = new Map<string, number>();
+      let hasWall = false;
+      let hasRoof = false;
       for (let x = -maxR; x <= maxR; x++) {
         for (const z of [0, 1]) {
           const c = sym(grid.get(x, y, z));
-          if (c !== " ") tally.set(c, (tally.get(c) ?? 0) + 1);
+          if (c === "W" || c === "Q" || c === "i") hasWall = true;
+          if (c === "P" || c === "N") hasRoof = true;
         }
       }
-      let best = " ";
-      let n = 0;
-      for (const [k, v] of tally) if (v > n) [best, n] = [k, v];
-      kinds[y] = best;
-      if (best === "W") wallRows++;
-      if (best === "P" || best === "N") roofRows++;
+      kinds[y] = hasWall ? "W" : hasRoof ? "P" : " ";
+      if (hasWall) wallRows++;
+      // Roof-EXCLUSIVE: a row of roof with no wall in it at all.
+      else if (hasRoof) roofRows++;
     }
 
     const ratio = roofRows ? wallRows / roofRows : Infinity;

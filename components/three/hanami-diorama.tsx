@@ -127,7 +127,9 @@ export function HanamiDiorama({ className }: { className?: string }) {
         holder.position.set(ISLAND_X, BASE_Y, 0);
         // Pitched roofs made the tenshu ~1.7x taller than the terraced ones, so the
         // whole diorama scales down to keep the finial clear of the nav.
-        holder.scale.setScalar(wide ? 0.45 : 0.34);
+        // The broad podium made the whole asset squatter, so it can sit larger in
+        // frame than the old slender tower could.
+        holder.scale.setScalar(wide ? 0.62 : 0.46);
         scene.add(holder);
 
         let petals: { mesh: THREE.InstancedMesh; update: (t: number) => void } | null =

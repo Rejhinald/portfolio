@@ -11,13 +11,13 @@ import type { Shape } from "./shapes";
 /**
  * Uniform block size in world units — the single scale for the whole diorama.
  *
- * The build is ~68 blocks across, which keeps it in the ~6.4 unit world footprint
+ * The build is ~88 blocks across, which keeps it in the ~6.4 unit world footprint
  * the camera is framed for. At dpr 2 that is roughly 13 *device* pixels per
  * block, i.e. comfortably past 1:1 against a 16px Minecraft tile — the point at which
  * real block textures read as themselves rather than as mush. Going much denser
  * shrinks blocks below their own texture resolution and *loses* detail.
  */
-export const BLOCK = 0.094;
+export const BLOCK = 0.073;
 
 export type BlockId =
   // surface
