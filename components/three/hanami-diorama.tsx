@@ -123,9 +123,11 @@ export function HanamiDiorama({ className }: { className?: string }) {
         const ISLAND_X = wide ? 0 : 0.1;
         // Sits high enough that the voxel spike clears the name lockup below,
         // but low enough that the tenshu's finial clears the nav above.
-        const BASE_Y = wide ? 2.52 : 2.9;
+        const BASE_Y = wide ? 2.45 : 2.85;
         holder.position.set(ISLAND_X, BASE_Y, 0);
-        holder.scale.setScalar(wide ? 0.56 : 0.42);
+        // Pitched roofs made the tenshu ~1.7x taller than the terraced ones, so the
+        // whole diorama scales down to keep the finial clear of the nav.
+        holder.scale.setScalar(wide ? 0.45 : 0.34);
         scene.add(holder);
 
         let petals: { mesh: THREE.InstancedMesh; update: (t: number) => void } | null =

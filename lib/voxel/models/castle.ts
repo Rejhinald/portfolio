@@ -340,6 +340,16 @@ function mokoshi(
 const eaveRadius = (wallHalf: number, overhang: number) => wallHalf + overhang;
 
 /**
+ * Height of a tier's roof, eave course to ridge.
+ *
+ * Japanese castle roofs are TALL relative to their walls — the reference's white
+ * bands are short strips between deep roofs, and this build had it inverted with
+ * tall walls and shallow roofs. ~0.45 of the eave half-width restores it.
+ */
+const roofHeight = (wallHalf: number, overhang: number) =>
+  Math.max(3, Math.round(eaveRadius(wallHalf, overhang) * 0.45));
+
+/**
  * One tiered roof. `wallTop` is the last wall row and `wallHalf` the wall's
  * half-width; the shell descends outward from a ridge plate to a dark eave
  * three blocks clear of the wall.
@@ -353,65 +363,76 @@ function tenshuRoof(
   overhang: number,
   nextHalf: number,
 ): void {
-  // With courses stepping 2 out per 1 down, an `overhang`-block eave needs
-  // overhang+1 courses and starts from a ridge plate `overhang` blocks narrower
-  // than the wall. Every course's inner edge then meets the outer edge of the
-  // one above it, so the shell is continuous.
-  const courses = overhang + 1;
-  const top = wallTop + overhang;
-  const ridgeHalf = Math.max(0, wallHalf - overhang);
+  // ── a genuinely PITCHED roof ──
+  //
+  // This was the shape problem underneath every previous detailing pass. The
+  // roof used to be stacked 2-wide annuli of full cubes stepping outward: a
+  // TERRACE, not a slope. No amount of ridging, banding or trim fixes a roof
+  // whose section is a staircase of flat rings.
+  //
+  // Now the radius shrinks continuously from eave to ridge and every course is
+  // capped with an outward-facing stair, so the section is a true triangle with
+  // a half-block bevel on each step.
+  //
+  // The profile is CONCAVE (反り): the radius barely moves over the first few
+  // courses then falls away quickly, which is what distinguishes a Japanese roof
+  // from a cone. pow(c/N, 1.6) gives that curve.
+  //
+  // Gap-free BY CONSTRUCTION: the radius strictly decreases with height, so each
+  // radius is occupied at exactly ONE height and no two courses ever stack —
+  // the half-block-gap failure mode simply cannot arise here. Each course fills
+  // from the next course's outer edge out to its own, keeping the shell closed.
+  const eave = eaveRadius(wallHalf, overhang);
+  const ridgeHalf = Math.max(1, Math.round(wallHalf * 0.18));
+  const N = roofHeight(wallHalf, overhang);
+  const spanR = eave - ridgeHalf;
+  const hipTrack: [number, number][] = [];
+  const rAt = (c: number): number => (c >= N ? ridgeHalf : eave - Math.round(spanR * Math.pow(c / N, 1.6)));
 
-  // Ridge plate — solid, so the hollow tier is never seen into. Widened where
-  // needed so the tier above actually has something to stand on.
-  roofAnnulus(grid, ox, oz, top, 0, Math.max(ridgeHalf, nextHalf));
-  for (let i = 1; i < courses - 1; i++) {
-    const inner = ridgeHalf + (i - 1) * 2 + 1;
-    roofAnnulus(grid, ox, oz, top - i, inner, inner + 1);
+  // Walk upward, forcing the radius to STRICTLY decrease each course. That is
+  // what guarantees the no-stacking property the gap-freedom depends on: where
+  // the concave curve is nearly flat near the eave it would otherwise repeat a
+  // radius, and a course landing on the same radius as the one below it is
+  // exactly the half-block gap this kept producing.
+  let prevR = eave;
+  let y = wallTop;
+  for (let c = 1; c <= N + spanR && prevR > ridgeHalf; c++) {
+    const r = Math.max(ridgeHalf, Math.min(prevR - 1, rAt(c)));
+    y++;
+    // Fill from this course's radius out to just inside the one below, so the
+    // tread is as wide as the curve says and the shell stays closed.
+    roofAnnulus(grid, ox, oz, y, r, prevR - 1);
+    ringShaped(grid, ox, oz, y, r, "roofstair", HALF.BOTTOM);
+    hipTrack.push([r, y]);
+    prevR = r;
   }
 
+  // Ridge plate, widened where the storey above needs somewhere to stand.
+  const top = y + 1;
+  annulus(grid, ox, oz, top, 0, Math.max(ridgeHalf, nextHalf), "roof");
+
   // ── 降り棟 kudari-mune: raised hip ridges ──
-  //
-  // The roof FIELD was the last flat surface. Edge trim alone could not fix it,
-  // because a stepped ramp with detail only at its rim is still a ramp. This is
-  // the walls' treatment applied to the roof: a line standing a full block PROUD
-  // of the tile surface, running down each 45-degree hip from the ridge plate to
-  // the eave corner, so it catches light on top and throws a shadow across the
-  // tiles beside it.
-  //
-  // It is also what a real tenshu has — every hip of every tier carries one — and
-  // it is what turns four flat planes into a roof with edges.
-  // A real kudari-mune is masonry — several courses of flat tile capped by a
-  // coping — standing 2-3 tiles proud and 3 wide. A 1x1 line reads as a seam and
-  // casts nothing, which is exactly why the first attempt changed so little.
-  // Two courses high and three wide throws a shadow band across the field beside
-  // it: the pilaster trick, turned onto the diagonal.
+  // Masonry, not a line: three wide with a coping course above, standing proud
+  // of the tiles so it throws a shadow band across the field beside it.
   const hip = (r: number, y: number) => {
-    for (const sx of [-1, 1] as const)
+    for (const sx of [-1, 1] as const) {
       for (const sz of [-1, 1] as const) {
         const cx = ox + sx * r;
         const cz = oz + sz * r;
-        // Base course, 3 wide across the run of the diagonal.
         grid.set(cx, y, cz, "ridge");
         grid.set(cx - sx, y, cz, "ridge");
         grid.set(cx, y, cz - sz, "ridge");
-        // Coping, one narrower and one higher, so the profile steps in.
         grid.set(cx, y + 1, cz, "deepslatetiles");
       }
+    }
   };
-  for (let i = 1; i < courses - 1; i++) {
-    const inner = ridgeHalf + (i - 1) * 2 + 1;
-    // One course higher than the tiles it rides on, hence the +1.
-    hip(inner, top - i + 1);
-    hip(inner + 1, top - i + 1);
-  }
-  // Carry the hip down onto the eave course so it reaches the upturned corner
-  // rather than stopping short in mid-slope.
-  hip(eaveRadius(wallHalf, overhang) - 1, wallTop + 1);
+  // One per course, riding the same curve as the tiles beneath it.
+  for (const [r, hy] of hipTrack) hip(r, hy);
   // ── the eave, at half-block resolution ──
   // This edge is the whole character of the roof, and it is where the reference
   // build spends its slabs and stairs. Cubes here give a blunt, stepped rim;
   // stairs give a true slope and a slab tip gives the flare beyond it.
-  const eave = eaveRadius(wallHalf, overhang);
+  // (eave is declared above, with the pitch geometry)
 
   // ── the eave as a THICK assembly, not a lip ──
   //
@@ -667,11 +688,17 @@ export function buildCastle(
     overhang: number;
     gable: "x" | "z";
   }[] = [
-    { y0: 13, y1: 21, half: 19, overhang: 4, gable: "z" },
-    { y0: 26, y1: 33, half: 15, overhang: 4, gable: "x" },
-    { y0: 38, y1: 44, half: 12, overhang: 3, gable: "z" },
-    { y0: 48, y1: 53, half: 9, overhang: 3, gable: "x" },
-    { y0: 57, y1: 62, half: 7, overhang: 3, gable: "z" },
+    // Roof heights now come from roofHeight() (~0.45 x eave), so a tier's pitch
+    // is wall rows + roof height. Wall bands are SHORT — 5-6 rows — because the
+    // reference's white bands are thin strips between deep roofs; tall walls and
+    // shallow roofs was the proportion this build had backwards.
+    //   t1 eave 23 -> roof 10   t2 eave 19 -> roof 9
+    //   t3 eave 15 -> roof 7    t4 eave 12 -> roof 5   t5 eave 10 -> roof 5
+    { y0: 13, y1: 18, half: 19, overhang: 4, gable: "z" },
+    { y0: 29, y1: 34, half: 15, overhang: 4, gable: "x" },
+    { y0: 44, y1: 48, half: 12, overhang: 3, gable: "z" },
+    { y0: 56, y1: 60, half: 9, overhang: 3, gable: "x" },
+    { y0: 66, y1: 70, half: 7, overhang: 3, gable: "z" },
   ];
 
   /**
