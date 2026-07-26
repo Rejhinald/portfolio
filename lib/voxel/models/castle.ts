@@ -197,11 +197,14 @@ function wallRelief(
 ): void {
   const d = half + 1;
 
-  const post4 = (t: number, y: number) => {
-    grid.set(ox + t, y, oz - d, post);
-    grid.set(ox + t, y, oz + d, post);
-    grid.set(ox - d, y, oz + t, post);
-    grid.set(ox + d, y, oz + t, post);
+  /** Pilasters are WHITE, as in the reference. Dark timber here made the walls
+   *  read brown; the reference's projecting pilasters are quartz, and the dark
+   *  timber is reserved for the horizontal sill and cap. */
+  const post4 = (t: number, y: number, id: BlockId = "quartzpillar") => {
+    grid.set(ox + t, y, oz - d, id);
+    grid.set(ox + t, y, oz + d, id);
+    grid.set(ox - d, y, oz + t, id);
+    grid.set(ox + d, y, oz + t, id);
   };
 
   for (let y = y0; y <= y1; y++) {
@@ -220,14 +223,15 @@ function wallRelief(
         post4(s * c, y);
         post4(s * (c + 1), y);
       }
+      void post; // pilasters are quartz; `post` is only for the sill and cap
     }
   }
 
   // A projecting sill at the foot and a cap at the head, tying the pilasters
   // together so they read as a frame rather than as loose sticks.
   for (let t = -d; t <= d; t++) {
-    post4(t, y0);
-    post4(t, y1);
+    post4(t, y0, post);
+    post4(t, y1, post);
   }
   for (const sx of [-1, 1] as const)
     for (const sz of [-1, 1] as const) {
@@ -250,7 +254,14 @@ function roofAt(x: number, y: number, z: number): BlockId {
   return "roof";
 }
 
-/** Fill an annulus with the patina mix rather than one flat material. */
+/**
+ * Fill a roof course, splitting tread from riser.
+ *
+ * Each 2:1 step already has a one-block vertical face where the course drops —
+ * the 小壁 kokabe riser. Giving that outer cell a different value from the inner
+ * one costs NO extra geometry and is what makes the field read as stacked tile
+ * courses instead of a smooth ramp. It is the cheapest relief on the whole roof.
+ */
 function roofAnnulus(
   grid: VoxelGrid,
   ox: number,
@@ -262,7 +273,15 @@ function roofAnnulus(
   for (let x = ox - outer; x <= ox + outer; x++)
     for (let z = oz - outer; z <= oz + outer; z++) {
       const r = Math.max(Math.abs(x - ox), Math.abs(z - oz));
-      if (r >= inner && r <= outer) grid.set(x, y, z, roofAt(x, y, z));
+      if (r < inner || r > outer) continue;
+      // Outermost ring of the course is the riser: darker, so the drop reads as
+      // a shadow line following the slope.
+      grid.set(
+        x,
+        y,
+        z,
+        r === outer && outer > inner ? "roofdark" : roofAt(x, y, z),
+      );
     }
 }
 
@@ -310,10 +329,22 @@ function tenshuRoof(
   //
   // It is also what a real tenshu has — every hip of every tier carries one — and
   // it is what turns four flat planes into a roof with edges.
+  // A real kudari-mune is masonry — several courses of flat tile capped by a
+  // coping — standing 2-3 tiles proud and 3 wide. A 1x1 line reads as a seam and
+  // casts nothing, which is exactly why the first attempt changed so little.
+  // Two courses high and three wide throws a shadow band across the field beside
+  // it: the pilaster trick, turned onto the diagonal.
   const hip = (r: number, y: number) => {
     for (const sx of [-1, 1] as const)
       for (const sz of [-1, 1] as const) {
-        grid.set(ox + sx * r, y, oz + sz * r, "ridge");
+        const cx = ox + sx * r;
+        const cz = oz + sz * r;
+        // Base course, 3 wide across the run of the diagonal.
+        grid.set(cx, y, cz, "ridge");
+        grid.set(cx - sx, y, cz, "ridge");
+        grid.set(cx, y, cz - sz, "ridge");
+        // Coping, one narrower and one higher, so the profile steps in.
+        grid.set(cx, y + 1, cz, "deepslatetiles");
       }
   };
   for (let i = 1; i < courses - 1; i++) {
@@ -385,8 +416,19 @@ function tenshuRoof(
     [-1, 1],
     [1, 1],
   ] as const) {
+    // 鬼瓦 onigawara — the mass that terminates each hip ridge at the corner.
+    // Taller and wider than the ridge it caps, in gold, because this is the
+    // corner the eye actually lands on and it reads against sky at any distance.
+    // Full-cube plinth across all three corner cells first. The eave ring here is
+    // half-slabs, and gold set straight onto those left a half-block of air under
+    // the wings — an onigawara sits on a solid corner block regardless.
     grid.set(ox + sx * eave, wallTop, oz + sz * eave, "roofdark");
+    grid.set(ox + sx * (eave - 1), wallTop, oz + sz * eave, "roofdark");
+    grid.set(ox + sx * eave, wallTop, oz + sz * (eave - 1), "roofdark");
     grid.set(ox + sx * eave, wallTop + 1, oz + sz * eave, "gold");
+    grid.set(ox + sx * eave, wallTop + 2, oz + sz * eave, "gold");
+    grid.set(ox + sx * (eave - 1), wallTop + 1, oz + sz * eave, "gold");
+    grid.set(ox + sx * eave, wallTop + 1, oz + sz * (eave - 1), "gold");
   }
 
   // Lanterns hung in the shadow under the overhang, spaced along each side.

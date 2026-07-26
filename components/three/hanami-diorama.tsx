@@ -65,19 +65,24 @@ export function HanamiDiorama({ className }: { className?: string }) {
         const fog = new THREE.Fog(PALETTE.sora, 11, 26);
         scene.fog = fog;
 
-        // Lighting is deliberately almost FLAT, summing to ~1.0 irradiance.
+        // Lighting is almost FLAT, summing to ~1.35 irradiance in daylight.
+        // It was ~1.0, tuned back when the rock was pale and blowing out. Now the
+        // rock is a proper dark ramp, and 1.0 left the white plaster walls at
+        // roughly 44% on their side faces (FACE_SHADE 0.6 x skylight) — grey, not
+        // white. The reference build is bright and high-contrast; this is what
+        // lets snow read as snow.
         // All the directionality already lives in the vertex colours (vanilla's
         // faceShade * AO, times the painted skylight), so any extra light on top
         // just double-counts — at 1.67 it blew mid-grey stone out to near-white
         // and flattened the whole palette. The hemisphere contributes hue rather
         // than brightness, and the sun exists mainly to cast the static shadow.
-        const ambient = new THREE.AmbientLight(0xffffff, 0.68);
+        const ambient = new THREE.AmbientLight(0xffffff, 0.92);
         scene.add(ambient);
-        const hemi = new THREE.HemisphereLight(PALETTE.sora, PALETTE.wakaba, 0.22);
+        const hemi = new THREE.HemisphereLight(PALETTE.sora, PALETTE.wakaba, 0.26);
         scene.add(hemi);
         // Sun sits high, left and IN FRONT (+Z is toward the camera) so it lights
         // the tenshu's visible face rather than silhouetting it.
-        const sun = new THREE.DirectionalLight(0xfff4e0, 0.25);
+        const sun = new THREE.DirectionalLight(0xfff4e0, 0.3);
         sun.position.set(-6, 9.5, 7);
         sun.name = "sun";
         scene.add(sun);
@@ -174,14 +179,14 @@ export function HanamiDiorama({ className }: { className?: string }) {
           // up to 1.0, emitters pinned at 1.0). Dimming the scene lights as well
           // double-dims, and crushes the lanterns along with everything else —
           // the building went dark instead of glowing.
-          ambient.intensity = dark ? 0.86 : 0.68;
+          ambient.intensity = dark ? 0.86 : 0.92;
           hemi.color.setHex(dark ? NIGHT.moon : PALETTE.sora);
           hemi.groundColor.setHex(dark ? NIGHT.skyDeep : PALETTE.wakaba);
-          hemi.intensity = dark ? 0.14 : 0.22;
+          hemi.intensity = dark ? 0.14 : 0.26;
           // The sun must go nearly out at night, or its N·L term relights the
           // side facing it and undoes the baked lamplight.
           sun.color.setHex(dark ? NIGHT.moon : 0xfff4e0);
-          sun.intensity = dark ? 0.04 : 0.25;
+          sun.intensity = dark ? 0.04 : 0.3;
           if (shadows) renderer.shadowMap.needsUpdate = true;
         };
 

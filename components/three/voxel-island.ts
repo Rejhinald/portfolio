@@ -80,7 +80,7 @@ export function createVoxelIsland(opts: VoxelIslandOpts): VoxelIsland {
     yDark: -18,
     yLit: 4,
     reach: 7,
-    minSky: 0.74,
+    minSky: 0.87,
     minGravity: 0.62,
   });
 
