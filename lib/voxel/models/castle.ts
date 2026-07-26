@@ -175,6 +175,68 @@ function goldWoolBand(
 }
 
 /**
+ * Wall relief — pilasters standing proud of the wall plane.
+ *
+ * Taken from how the reference build actually assembles a storey. Read in plan,
+ * its wall is not one surface: quartz pilasters project a full block outside the
+ * plaster face, at the corners and in groups along each side, with timber posts
+ * on a layer behind. A single flat ring of plaster is what made these walls read
+ * as cardboard however good the texture on them was.
+ *
+ * Everything here sits at `half + 1`, i.e. OUTSIDE the wall, so it catches its
+ * own light and throws a shadow onto the plaster — which is the whole point.
+ */
+function wallRelief(
+  grid: VoxelGrid,
+  ox: number,
+  oz: number,
+  y0: number,
+  y1: number,
+  half: number,
+  post: BlockId,
+): void {
+  const d = half + 1;
+
+  const post4 = (t: number, y: number) => {
+    grid.set(ox + t, y, oz - d, post);
+    grid.set(ox + t, y, oz + d, post);
+    grid.set(ox - d, y, oz + t, post);
+    grid.set(ox + d, y, oz + t, post);
+  };
+
+  for (let y = y0; y <= y1; y++) {
+    // Corner returns: an L wrapping each corner, so the corner reads as a solid
+    // column rather than two flat edges meeting at a line.
+    for (const sx of [-1, 1] as const) {
+      for (const sz of [-1, 1] as const) {
+        grid.set(ox + sx * d, y, oz + sz * d, "quartzpillar");
+        grid.set(ox + sx * d, y, oz + sz * half, "quartzpillar");
+        grid.set(ox + sx * half, y, oz + sz * d, "quartzpillar");
+      }
+    }
+    // Mid-wall pilasters in pairs, echoing the reference's grouped quartz.
+    for (let c = 6; c <= half - 3; c += 7) {
+      for (const s of [-1, 1] as const) {
+        post4(s * c, y);
+        post4(s * (c + 1), y);
+      }
+    }
+  }
+
+  // A projecting sill at the foot and a cap at the head, tying the pilasters
+  // together so they read as a frame rather than as loose sticks.
+  for (let t = -d; t <= d; t++) {
+    post4(t, y0);
+    post4(t, y1);
+  }
+  for (const sx of [-1, 1] as const)
+    for (const sz of [-1, 1] as const) {
+      grid.set(ox + sx * d, y0, oz + sz * d, post);
+      grid.set(ox + sx * d, y1, oz + sz * d, post);
+    }
+}
+
+/**
  * Roof tile for a position. Oxidised copper sits at almost the same brightness
  * as prismarine but a clearly different green, so mixing them adds patina
  * variation without breaking the roof's silhouette into light and dark patches —
@@ -448,6 +510,10 @@ export function buildCastle(
         grid.set(ox + sx * half, y, oz + sz * half, WOOD[Math.min(i, WOOD.length - 1)]);
       }
     }
+
+    // Relief BEFORE the roof and gable, so those overwrite it where they meet
+    // rather than leaving pilasters poking through an eave.
+    wallRelief(grid, ox, oz, y0, y1, half, WOOD[Math.min(i, WOOD.length - 1)]);
 
     tenshuRoof(grid, ox, oz, y1, half, overhang, nextHalf);
     // Large: in the reference the gable spans most of the wall it sits on,
