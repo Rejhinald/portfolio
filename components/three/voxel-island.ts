@@ -57,14 +57,14 @@ export function createVoxelIsland(opts: VoxelIslandOpts): VoxelIsland {
   const grid = new VoxelGrid();
   buildIsland(grid, rng);
   buildCastle(grid, 0, 0, rng);
-  buildSakuraTree(grid, -22, 8, rng);
-  buildTorii(grid, 0, 24);
+  buildSakuraTree(grid, -27, 10, rng);
+  buildTorii(grid, 0, 29);
 
   // Bonemeal pass — last, so it can see the finished surface and skip the paved
   // approach and anything already standing on the grass.
-  const plantCount = buildGroundCover(grid, rng, 30, {
+  const plantCount = buildGroundCover(grid, rng, 36, {
     density: opts.tier === "static" ? 0.7 : opts.tier === "reduced" ? 0.55 : 1,
-    keepClear: (x, z) => Math.abs(x) <= 2 && z > 14, // the approach + gate mouth
+    keepClear: (x, z) => Math.abs(x) <= 3 && z > 19, // the approach + gate mouth
   });
 
   // Sweep stranded blocks (the canopy's hole-punching strands a few leaves) —

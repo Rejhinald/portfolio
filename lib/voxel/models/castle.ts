@@ -87,6 +87,13 @@ function baseCourse(
 ): void {
   for (let x = ox - half; x <= ox + half; x++)
     for (let z = oz - half; z <= oz + half; z++) {
+      // Shell only. A solid plinth at this size is ~22k cells whose interior is
+      // never visible; the mesher would cull every one of those faces anyway, so
+      // they would cost build time and memory for nothing. The top two courses
+      // stay solid because the tenshu stands on them.
+      const edge = half - Math.max(Math.abs(x - ox), Math.abs(z - oz));
+      if (edge > 3 && y < plinthTop - 1) continue;
+
       const n = clusterNoise(x, y * 2, z, 0.22, 4021);
       const damp = clusterNoise(x, y, z, 0.16, 6607);
       // Height through the plinth, 0 at the footing to 1 at the top course.
@@ -293,24 +300,55 @@ function gable(
   yBase: number,
   wallHalf: number,
   halfW: number,
+  height: number,
   axis: "x" | "z",
 ): void {
-  const d = wallHalf + 1; // stands on the course that crosses the wall line
-  const put = (t: number, y: number, s: number, id: Parameters<VoxelGrid["set"]>[3]) =>
+  // How far the dormer stands proud of the wall. A flat triangle painted on the
+  // wall plane reads as decal; the reference build's gables are dormers with
+  // real depth, and the shadow their cheeks cast is most of what sells them.
+  const PROJ = 3;
+
+  /** Place at (along-wall t, height y, distance from centre dist). */
+  const put = (
+    t: number,
+    y: number,
+    dist: number,
+    s: number,
+    id: Parameters<VoxelGrid["set"]>[3],
+  ) =>
     axis === "z"
-      ? grid.set(ox + t, y, oz + s * d, id)
-      : grid.set(ox + s * d, y, oz + t, id);
+      ? grid.set(ox + t, y, oz + s * dist, id)
+      : grid.set(ox + s * dist, y, oz + t, id);
 
   for (const s of [-1, 1] as const) {
-    for (let r = 0; r < halfW; r++) {
-      const w = halfW - r;
-      for (let t = -w; t <= w; t++) put(t, yBase + r, s, "quartz");
-      // Gold rake down both slopes.
-      put(-w, yBase + r, s, "gold");
-      put(w, yBase + r, s, "gold");
+    const face = wallHalf + PROJ;
+
+    // Width and height are independent. A 45-degree triangle makes a wide gable
+    // a TALL one, which drove the tier-1 gable up into the tier-2 eave; the
+    // reference's gables are wide and shallow, so the rake is interpolated.
+    for (let r = 0; r <= height; r++) {
+      const w = Math.max(0, Math.round(halfW * (1 - r / height)));
+
+      // Front face: white plaster infill inside a green tile border, which is
+      // exactly how the reference reads — a bright triangle rimmed in roof.
+      for (let t = -w; t <= w; t++) {
+        put(t, yBase + r, face, s, Math.abs(t) === w ? "roof" : "plaster");
+      }
+
+      // The dormer's own pitched cheeks, receding back to the wall. Without
+      // these the triangle floats with nothing joining it to the building.
+      for (let j = 0; j < PROJ; j++) {
+        put(-w, yBase + r, wallHalf + j, s, "roof");
+        put(w, yBase + r, wallHalf + j, s, "roof");
+      }
     }
-    // Flat apex plate with a gold crown — the tutorial's gable head.
-    put(0, yBase + halfW, s, "gold");
+
+    // Ridge running from the apex back into the roof, then the gold finial.
+    for (let j = 0; j <= PROJ; j++) {
+      put(0, yBase + height, wallHalf + j, s, "roofdark");
+    }
+    put(0, yBase + height + 1, face, s, "gold");
+    put(0, yBase + height + 1, face - 1, s, "gold");
   }
 }
 
@@ -324,9 +362,9 @@ export function buildCastle(
   // The reference build sits on a 17-course stone platform; the earlier 4 courses
   // were far too shallow and let the tenshu look like it was resting on the lawn.
   // Battered inward as it rises, the way a real 石垣 wall leans back.
-  const PLINTH_TOP = 9;
+  const PLINTH_TOP = 12;
   for (let y = 1; y <= PLINTH_TOP; y++) {
-    const half = 17 - Math.floor((y - 1) / 3);
+    const half = 22 - Math.floor((y - 1) / 3);
     baseCourse(grid, ox, oz, y, half, PLINTH_TOP);
     // A stair rim caps each batter step so the setbacks read as courses.
     if ((y - 1) % 3 === 2) {
@@ -335,7 +373,7 @@ export function buildCastle(
   }
 
   // Gate mouth in the front face of the plinth, at the head of the approach.
-  const gateZ = 17;
+  const gateZ = 22;
   for (let t = -2; t <= 2; t++)
     for (let y = 1; y <= 4; y++) {
       grid.set(ox + t, y, gateZ, "window");
@@ -355,11 +393,11 @@ export function buildCastle(
     overhang: number;
     gable: "x" | "z";
   }[] = [
-    { y0: 10, y1: 16, half: 14, overhang: 3, gable: "z" },
-    { y0: 20, y1: 25, half: 11, overhang: 3, gable: "x" },
-    { y0: 29, y1: 33, half: 9, overhang: 3, gable: "z" },
-    { y0: 37, y1: 40, half: 7, overhang: 3, gable: "x" },
-    { y0: 44, y1: 47, half: 5, overhang: 2, gable: "z" },
+    { y0: 13, y1: 21, half: 19, overhang: 4, gable: "z" },
+    { y0: 26, y1: 33, half: 15, overhang: 4, gable: "x" },
+    { y0: 38, y1: 44, half: 12, overhang: 3, gable: "z" },
+    { y0: 48, y1: 53, half: 9, overhang: 3, gable: "x" },
+    { y0: 57, y1: 62, half: 7, overhang: 3, gable: "z" },
   ];
 
   TIERS.forEach((tier, i) => {
@@ -412,7 +450,14 @@ export function buildCastle(
     }
 
     tenshuRoof(grid, ox, oz, y1, half, overhang, nextHalf);
-    gable(grid, ox, oz, y1 + 2, half, Math.min(4, half - 3), tier.gable);
+    // Large: in the reference the gable spans most of the wall it sits on,
+    // which is what makes the silhouette read as a castle rather than a
+    // stack of roofs. Clamped so the smallest tier still has a wall left.
+    // Wide but shallow: the width carries the silhouette, while the height is
+    // kept clear of the eave belonging to the storey above.
+    const gw = Math.max(3, Math.round(half * 0.62));
+    const gh = Math.max(3, Math.round(gw * 0.55));
+    gable(grid, ox, oz, y1 + 2, half, gw, gh, tier.gable);
   });
 
   // Gold finial crowning the ridge.
@@ -423,7 +468,7 @@ export function buildCastle(
 
   // Stone lanterns flanking the gate, on the plinth ledge.
   for (const sx of [-1, 1] as const) {
-    if (rng() < 0.9) grid.set(ox + sx * 6, PLINTH_TOP + 1, oz + 14, "lantern");
-    if (rng() < 0.7) grid.set(ox + sx * 10, PLINTH_TOP + 1, oz + 11, "lantern");
+    if (rng() < 0.9) grid.set(ox + sx * 8, PLINTH_TOP + 1, oz + 19, "lantern");
+    if (rng() < 0.7) grid.set(ox + sx * 13, PLINTH_TOP + 1, oz + 15, "lantern");
   }
 }

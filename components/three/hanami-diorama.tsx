@@ -118,7 +118,7 @@ export function HanamiDiorama({ className }: { className?: string }) {
         const ISLAND_X = wide ? 0 : 0.1;
         // Sits high enough that the voxel spike clears the name lockup below,
         // but low enough that the tenshu's finial clears the nav above.
-        const BASE_Y = wide ? 2.7 : 3.05;
+        const BASE_Y = wide ? 2.52 : 2.9;
         holder.position.set(ISLAND_X, BASE_Y, 0);
         holder.scale.setScalar(wide ? 0.56 : 0.42);
         scene.add(holder);
@@ -148,7 +148,7 @@ export function HanamiDiorama({ className }: { className?: string }) {
         const baseCam = new THREE.Vector3(
           0,
           BASE_Y + (wide ? 0.8 : 0.95),
-          wide ? 10.6 : 9.2,
+          wide ? 9.85 : 8.7,
         );
         const target = new THREE.Vector3(
           wide ? 0 : 0.1,

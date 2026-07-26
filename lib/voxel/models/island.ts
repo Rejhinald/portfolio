@@ -10,11 +10,11 @@ const TAU = Math.PI * 2;
  * The spike is deliberately short: its lowest courses are hazed into the page
  * anyway, so the vertical budget is better spent on the castle above.
  */
-const STONE_TOP_Y = -5;
-const TIP_Y = -22;
+const STONE_TOP_Y = -6;
+const TIP_Y = -28;
 
 /** Loop bound — nothing on the island reaches further out than this. */
-const BOUND = 32;
+const BOUND = 36;
 
 /**
  * Which rock sits at a point in the crag.
@@ -110,7 +110,7 @@ export function buildIsland(grid: VoxelGrid, rng: () => number): void {
   // the rim wobbles between ~19 and ~22 blocks instead of being a circle.
   const SAMPLES = 32;
   const rim: number[] = [];
-  for (let i = 0; i < SAMPLES; i++) rim.push(randRange(rng, 27, 30));
+  for (let i = 0; i < SAMPLES; i++) rim.push(randRange(rng, 30, 34));
 
   /** Rim radius for a direction (radians), smoothly interpolated + wrapped. */
   const rimAt = (angle: number): number => {
@@ -175,7 +175,8 @@ export function buildIsland(grid: VoxelGrid, rng: () => number): void {
   slab(-1, (rim) => rim - 1.5, (x, z) => soilAt(x, -1, z, 0.1));
   slab(-2, (rim) => rim - 3, (x, z) => soilAt(x, -2, z, 0.36));
   slab(-3, (rim) => rim - 5, (x, z) => soilAt(x, -3, z, 0.62));
-  slab(-4, (rim) => rim - 7.5, (x, z) => soilAt(x, -4, z, 0.85));
+  slab(-4, (rim) => rim - 7.5, (x, z) => soilAt(x, -4, z, 0.72));
+  slab(-5, (rim) => rim - 10, (x, z) => soilAt(x, -5, z, 0.9));
 
   // --- stone body ----------------------------------------------------------
   // Radius follows a convex curve rather than a straight line, so the rock
@@ -221,10 +222,10 @@ export function buildIsland(grid: VoxelGrid, rng: () => number): void {
     // Linear taper = straight sides in section, i.e. a wedge. Two abrupt
     // shelves break the silhouette so it is a stack of slabs, not one cone.
     const step = t > 0.42 ? 1.8 : 0;
-    const r = Math.max(0.8, 20 * (1 - t) - step + randRange(rng, -0.7, 0.7));
+    const r = Math.max(0.8, 25 * (1 - t) - step + randRange(rng, -0.7, 0.7));
     slabIndexed(
       y,
-      (idx, rim) => r * facetRadius(cosA, idx) + 0.22 * (rim - 28.5),
+      (idx, rim) => r * facetRadius(cosA, idx) + 0.22 * (rim - 32),
       (x, z) => rockAt(x, y, z, t),
     );
   }
@@ -250,16 +251,16 @@ export function buildIsland(grid: VoxelGrid, rng: () => number): void {
   // --- surface dressing ----------------------------------------------------
   // A 2-wide paved approach winding in from the torii toward the castle steps.
   const TRAIL: readonly [number, number][] = [
-    [0, 26],
+    [0, 31],
+    [0, 30],
+    [0, 29],
+    [1, 28],
+    [1, 27],
+    [1, 26],
     [0, 25],
     [0, 24],
-    [1, 23],
-    [1, 22],
-    [1, 21],
-    [0, 20],
-    [0, 19],
-    [0, 18],
-    [0, 17],
+    [0, 23],
+    [0, 22],
   ];
   for (const [x, z] of TRAIL) {
     grid.set(x, 0, z, "stonebrick");

@@ -108,10 +108,10 @@ describe("atlas UVs", () => {
 
 describe("scale", () => {
   it("keeps the denser build inside the world footprint the camera is framed for", () => {
-    expect(BLOCK).toBeCloseTo(0.115, 6);
-    // The island rim reaches ~28 blocks, so the full span is ~56 blocks. That
+    expect(BLOCK).toBeCloseTo(0.094, 6);
+    // The island rim reaches ~34 blocks, so the full span is ~68 blocks. That
     // has to stay in the same 6-7 unit ballpark the camera was set up for.
-    const span = 56 * BLOCK;
+    const span = 68 * BLOCK;
     expect(span).toBeGreaterThan(6);
     expect(span).toBeLessThan(7.5);
   });
