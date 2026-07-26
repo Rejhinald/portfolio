@@ -8,6 +8,7 @@ import { PALETTE } from "@/lib/three/palette";
 import { createVoxelIsland } from "./voxel-island";
 import { createPetalField } from "@/lib/three/diorama-petals";
 import { createMist } from "@/lib/three/mist";
+import { createLightShafts } from "@/lib/three/god-rays";
 
 function envTier() {
   const nav = navigator as Navigator & { deviceMemory?: number };
@@ -71,8 +72,12 @@ export function HanamiDiorama({ className }: { className?: string }) {
         // than brightness, and the sun exists mainly to cast the static shadow.
         scene.add(new THREE.AmbientLight(0xffffff, 0.68));
         scene.add(new THREE.HemisphereLight(PALETTE.sora, PALETTE.wakaba, 0.22));
+        // Sun sits high, left and IN FRONT (+Z is toward the camera), so it lights
+        // the tenshu's visible face. A sun behind the building would give stronger
+        // shafts but silhouette the subject, which is the opposite of the brief.
+        const SUN_POS = new THREE.Vector3(-6, 9.5, 7);
         const sun = new THREE.DirectionalLight(0xfff4e0, 0.25);
-        sun.position.set(4.5, 8, 3.5);
+        sun.position.copy(SUN_POS);
         sun.name = "sun";
         scene.add(sun);
 
@@ -110,7 +115,7 @@ export function HanamiDiorama({ className }: { className?: string }) {
         const ISLAND_X = wide ? 0 : 0.1;
         // Sits high enough that the voxel spike clears the name lockup below,
         // but low enough that the tenshu's finial clears the nav above.
-        const BASE_Y = wide ? 2.95 : 3.25;
+        const BASE_Y = wide ? 2.7 : 3.05;
         holder.position.set(ISLAND_X, BASE_Y, 0);
         holder.scale.setScalar(wide ? 0.56 : 0.42);
         scene.add(holder);
@@ -126,7 +131,9 @@ export function HanamiDiorama({ className }: { className?: string }) {
 
         const mist = createMist(tier.animate ? 5 : 4);
         mist.mesh.name = "mist";
-        mist.mesh.position.set(ISLAND_X, wide ? 1.5 : 1.1, 0);
+        // Below the crag's tip, not through it: at 1.5 the mist plane sat halfway
+        // up the rock and washed out its strata and ore pockets.
+        mist.mesh.position.set(ISLAND_X, wide ? 0.85 : 0.6, 0);
         scene.add(mist.mesh);
 
         // Sit ABOVE the island's grass plane and tilt down ~10°, so the surface
@@ -135,14 +142,36 @@ export function HanamiDiorama({ className }: { className?: string }) {
         // much steeper and a building this tall stops reading as a tower.
         // The aim point stays BELOW the island so the tenshu keeps the upper
         // half of the frame and clears the nav.
+        // A taller tenshu (the stone plinth added ~9 courses) needs both a
+        // longer lens distance and a shallower tilt, or the finial clips the nav.
+        // God rays: a fan of additive blades along the sun's travel direction,
+        // anchored above and in front of the island so the shafts sweep down past
+        // the tenshu rather than out from behind it.
+        // Kept SHORT and high: additive light can only read against the blue upper
+        // sky. Extended down into the washi-paper half of the hero it desaturates
+        // the background instead of brightening it, and looks like smudges.
+        const shafts = createLightShafts({
+          direction: new THREE.Vector3(0, 0, 0).sub(SUN_POS).normalize(),
+          viewDir: new THREE.Vector3(0, 0, 1),
+          count: tier.tier === "full" ? 8 : 5,
+          length: 9.5,
+          spread: 7,
+          intensity: tier.tier === "full" ? 0.26 : 0.2,
+          color: 0xfff6e4,
+          animate: tier.animate,
+        });
+        shafts.group.position.copy(SUN_POS).multiplyScalar(0.52);
+        shafts.group.position.y += 2.4;
+        scene.add(shafts.group);
+
         const baseCam = new THREE.Vector3(
           0,
-          BASE_Y + (wide ? 1.1 : 1.25),
-          wide ? 9.6 : 8.4,
+          BASE_Y + (wide ? 0.8 : 0.95),
+          wide ? 10.6 : 9.2,
         );
         const target = new THREE.Vector3(
           wide ? 0 : 0.1,
-          BASE_Y - (wide ? 0.5 : 0.3),
+          BASE_Y - (wide ? 0.25 : 0.1),
           0,
         );
         camera.position.copy(baseCam);
@@ -152,17 +181,20 @@ export function HanamiDiorama({ className }: { className?: string }) {
           // Budget check: expect ~1-3 draw calls and ~20-40k triangles.
           console.info(
             `[voxel] ${island.stats.blocks} blocks -> ${island.stats.faces} faces ` +
-              `(${island.stats.triangles} tris) in ${island.stats.buildMs.toFixed(0)}ms`,
+              `(${island.stats.triangles} tris, ${island.stats.plants} plants) ` +
+              `in ${island.stats.buildMs.toFixed(0)}ms`,
           );
         }
 
         if (!tier.animate) {
           holder.rotation.y = -0.25;
+          shafts.update(0);
           return { render: "once" };
         }
 
         return (t: number) => {
           time.value = t;
+          shafts.update(t);
           holder.rotation.y = Math.sin(t * 0.12) * 0.45 - 0.1;
           holder.position.y = BASE_Y + Math.sin(t * 0.6) * 0.08;
           petals?.update(t);

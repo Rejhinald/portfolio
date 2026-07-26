@@ -17,6 +17,50 @@ const TIP_Y = -22;
 const BOUND = 32;
 
 /**
+ * Which rock sits at a point in the crag.
+ *
+ * Two ideas from build practice, both deliberate:
+ *  - **Stratification.** Real rock reads as horizontal bands, and value gets
+ *    darker with depth. So the ramp runs light (calcite/diorite) near the soil,
+ *    through the mid greys, down to tuff and deepslate at the tip. Depth does
+ *    the work a random mix cannot.
+ *  - **Low contrast in the resting areas, high only as an accent.** The rock is
+ *    not the focal point — the castle is. The bulk therefore stays inside a
+ *    narrow value band (stone/andesite/cobble/gravel, all within a few percent
+ *    of each other), and the only high-contrast elements are sparse ore pockets.
+ *    Ores are placed in the UPPER third only, because below that the height haze
+ *    dissolves the rock into the page and they would simply not read.
+ */
+function rockAt(x: number, y: number, z: number, t: number): BlockId {
+  // Ore pockets: clustered like real veins, never scattered singles.
+  if (t < 0.35) {
+    const ore = clusterNoise(x, y * 1.7, z, 0.42, 3313);
+    if (ore > 0.9) {
+      const which = clusterNoise(x, y, z, 0.11, 8821);
+      if (which > 0.72) return "goldore";
+      if (which > 0.5) return "lapisore";
+      if (which > 0.26) return "ironore";
+      return "coalore";
+    }
+  }
+
+  // Banding: a slow vertical field mixed with depth so strata drift rather than
+  // sitting in perfectly flat layers.
+  const band = clusterNoise(x * 0.35, y * 2.2, z * 0.35, 0.3, 4477);
+  const depth = t + (band - 0.5) * 0.28;
+
+  if (depth < 0.1) return band > 0.62 ? "calcite" : "diorite";
+  if (depth < 0.28) return band > 0.55 ? "andesite" : "stone";
+  if (depth < 0.55) {
+    if (band > 0.68) return "cobble";
+    if (band < 0.3) return "gravel";
+    return "stone";
+  }
+  if (depth < 0.78) return band > 0.55 ? "tuff" : "cobbleddeepslate";
+  return band > 0.5 ? "deepslate" : "cobbleddeepslate";
+}
+
+/**
  * Floating island terrain, centred on (0,0): grass cap, three soil layers and a
  * craggy stone spike underneath, plus a winding path and a few rim boulders.
  *
@@ -100,8 +144,26 @@ export function buildIsland(grid: VoxelGrid, rng: () => number): void {
       y,
       // Lean the crag off-axis as it descends, so it hangs rather than funnels.
       (rim, lean) => r + 0.3 * (rim - 28.5) + 2 * t * lean,
-      (x, z) => (clusterNoise(x, y, z, 0.16, 991) > 0.6 ? "cobble" : "stone"),
+      (x, z) => rockAt(x, y, z, t),
     );
+  }
+
+  // Dripstone spikes hanging off the underside — the cheapest way to break up
+  // a smooth silhouette, and silhouette reads as detail far better than
+  // interior texture does at this scale.
+  for (let i = 0; i < 26; i++) {
+    const a = rng() * TAU;
+    const rr = randRange(rng, 3, 15);
+    const bx = Math.round(Math.cos(a) * rr);
+    const bz = Math.round(Math.sin(a) * rr);
+    // Find the lowest rock in this column, then hang a taper below it.
+    let y = STONE_TOP_Y;
+    while (grid.has(bx, y - 1, bz) && y > TIP_Y) y--;
+    if (!grid.has(bx, y, bz)) continue;
+    const len = 1 + Math.floor(rng() * 4);
+    for (let k = 1; k <= len; k++) {
+      grid.setIfEmpty(bx, y - k, bz, k === len ? "dripstone" : "dripstone");
+    }
   }
 
   // --- surface dressing ----------------------------------------------------
@@ -119,8 +181,8 @@ export function buildIsland(grid: VoxelGrid, rng: () => number): void {
     [0, 17],
   ];
   for (const [x, z] of TRAIL) {
-    grid.set(x, 0, z, "path");
-    grid.set(x + 1, 0, z, "path");
+    grid.set(x, 0, z, "stonebrick");
+    grid.set(x + 1, 0, z, "stonebrick");
   }
 
   // 3-4 loose boulders perched inside the rim, spread roughly evenly around

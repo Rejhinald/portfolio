@@ -29,8 +29,31 @@
  * every tier is actually supported by the roof below it.
  */
 
+import type { BlockId } from "../blocks";
 import type { VoxelGrid } from "../grid";
 import { clusterNoise } from "../light";
+import { HALF, outwardFacing, type Half } from "../shapes";
+
+/**
+ * A square ring of oriented slabs/stairs, each turned to face outward from the
+ * centre so an eave course slopes away from the building on all four sides.
+ */
+function ringShaped(
+  grid: VoxelGrid,
+  ox: number,
+  oz: number,
+  y: number,
+  half: number,
+  id: BlockId,
+  vhalf: Half,
+): void {
+  for (let x = ox - half; x <= ox + half; x++)
+    for (let z = oz - half; z <= oz + half; z++) {
+      const r = Math.max(Math.abs(x - ox), Math.abs(z - oz));
+      if (r !== half) continue;
+      grid.setShaped(x, y, z, id, outwardFacing(x - ox, z - oz), vhalf);
+    }
+}
 
 /** Filled square annulus on the XZ plane, inclusive of both radii. */
 function annulus(
@@ -82,12 +105,13 @@ function windowBand(
 ): void {
   const span = half - 3; // usable half-run once the corners are kept clear
   if (span < 1) return;
-  // Place a 3-wide window centred, then mirrored pairs while they still fit.
+  // Narrow, widely spaced openings. Wider bands read as modern ribbon glazing
+  // rather than the sparse slit windows a castle actually has.
   const centres = [0];
-  for (let c = 5; c <= span - 1; c += 5) centres.push(c, -c);
+  for (let c = 6; c <= span - 1; c += 6) centres.push(c, -c);
 
   for (const c of centres) {
-    for (let d = -1; d <= 1; d++) {
+    for (let d = 0; d <= 1; d++) {
       const t = c + d;
       if (Math.abs(t) > span) continue;
       for (let y = y0; y <= y1; y++) {
@@ -151,19 +175,38 @@ function tenshuRoof(
     const inner = ridgeHalf + (i - 1) * 2 + 1;
     annulus(grid, ox, oz, top - i, inner, inner + 1, "roof");
   }
-  // Deck border: the lowest, widest course reads as the eave's shadow line.
+  // ── the eave, at half-block resolution ──
+  // This edge is the whole character of the roof, and it is where the reference
+  // build spends its slabs and stairs. Cubes here give a blunt, stepped rim;
+  // stairs give a true slope and a slab tip gives the flare beyond it.
   const eave = wallHalf + overhang;
-  annulus(grid, ox, oz, wallTop, eave - 1, eave, "roofdark");
 
-  // 反り — one block flicked up at each corner turns a stepped eave into a
-  // curved one. Gold tips it, which is where the eye lands on a real tenshu.
+  // Quartz cornice: upside-down stairs tucked under the eave, so the wall head
+  // reads as a moulded lip rather than a butt joint.
+  ringShaped(grid, ox, oz, wallTop - 1, wallHalf, "quartzstair", HALF.TOP);
+
+  // Sloped eave course, then the flared slab tip half a block lower.
+  ringShaped(grid, ox, oz, wallTop, eave - 1, "roofstair", HALF.BOTTOM);
+  ringShaped(grid, ox, oz, wallTop, eave, "roofslab", HALF.BOTTOM);
+  // Dark deck border under the tip — the eave's shadow line.
+  ringShaped(grid, ox, oz, wallTop - 1, eave, "ridgeslab", HALF.TOP);
+
+  // 反り — the corner flicked up turns a stepped eave into a curved one, which
+  // is where the eye lands on a real tenshu. Gold tips it.
   for (const [sx, sz] of [
     [-1, -1],
     [1, -1],
     [-1, 1],
     [1, 1],
   ] as const) {
-    grid.set(ox + sx * eave, wallTop + 1, oz + sz * eave, "roofdark");
+    grid.setShaped(
+      ox + sx * eave,
+      wallTop + 1,
+      oz + sz * eave,
+      "roofslab",
+      outwardFacing(sx, sz),
+      HALF.BOTTOM,
+    );
     grid.set(ox + sx * eave, wallTop + 2, oz + sz * eave, "gold");
   }
 }
@@ -207,19 +250,28 @@ export function buildCastle(
   oz: number,
   rng: () => number,
 ): void {
-  // ── stone base, battered inward so the mass sits into the rock ──
-  baseCourse(grid, ox, oz, 1, 16);
-  baseCourse(grid, ox, oz, 2, 16);
-  baseCourse(grid, ox, oz, 3, 15);
-  baseCourse(grid, ox, oz, 4, 14);
-
-  // Gate mouth in the front face of the base, at the head of the approach.
-  for (let t = -2; t <= 2; t++)
-    for (let y = 1; y <= 3; y++) {
-      grid.set(ox + t, y, oz + 16, "window");
-      grid.set(ox + t, y, oz + 15, "window");
+  // ── stone plinth ──
+  // The reference build sits on a 17-course stone platform; the earlier 4 courses
+  // were far too shallow and let the tenshu look like it was resting on the lawn.
+  // Battered inward as it rises, the way a real 石垣 wall leans back.
+  const PLINTH_TOP = 9;
+  for (let y = 1; y <= PLINTH_TOP; y++) {
+    const half = 17 - Math.floor((y - 1) / 3);
+    baseCourse(grid, ox, oz, y, half);
+    // A stair rim caps each batter step so the setbacks read as courses.
+    if ((y - 1) % 3 === 2) {
+      ringShaped(grid, ox, oz, y, half, "stonebrickstair", HALF.BOTTOM);
     }
-  for (let t = -3; t <= 3; t++) grid.set(ox + t, 4, oz + 16, "beam");
+  }
+
+  // Gate mouth in the front face of the plinth, at the head of the approach.
+  const gateZ = 17;
+  for (let t = -2; t <= 2; t++)
+    for (let y = 1; y <= 4; y++) {
+      grid.set(ox + t, y, gateZ, "window");
+      grid.set(ox + t, y, gateZ - 1, "window");
+    }
+  for (let t = -3; t <= 3; t++) grid.set(ox + t, 5, gateZ, "beam");
 
   /**
    * Wall rows [y0,y1], half-width, eave overhang, and which axis carries the
@@ -233,11 +285,11 @@ export function buildCastle(
     overhang: number;
     gable: "x" | "z";
   }[] = [
-    { y0: 5, y1: 11, half: 14, overhang: 3, gable: "z" },
-    { y0: 15, y1: 20, half: 11, overhang: 3, gable: "x" },
-    { y0: 24, y1: 28, half: 9, overhang: 3, gable: "z" },
-    { y0: 32, y1: 35, half: 7, overhang: 3, gable: "x" },
-    { y0: 39, y1: 42, half: 5, overhang: 2, gable: "z" },
+    { y0: 10, y1: 16, half: 14, overhang: 3, gable: "z" },
+    { y0: 20, y1: 25, half: 11, overhang: 3, gable: "x" },
+    { y0: 29, y1: 33, half: 9, overhang: 3, gable: "z" },
+    { y0: 37, y1: 40, half: 7, overhang: 3, gable: "x" },
+    { y0: 44, y1: 47, half: 5, overhang: 2, gable: "z" },
   ];
 
   TIERS.forEach((tier, i) => {
@@ -253,7 +305,15 @@ export function buildCastle(
     annulus(grid, ox, oz, y0, half, half, "beam");
     annulus(grid, ox, oz, y1, half, half, "quartz");
     goldWoolBand(grid, ox, oz, y1 - 1, half);
-    if (y1 - 2 > y0 + 1) windowBand(grid, ox, oz, y0 + 2, y1 - 2, half);
+    // Windows get ONE row, not the whole wall. The sill, the gold/wool band and
+    // the cornice are already dark or bright; spending three more rows on dark
+    // openings left a single course of white plaster and the tenshu read grey.
+    const wLo = y0 + 1;
+    const wHi = y1 - 2;
+    if (wHi >= wLo) {
+      const wy = Math.floor((wLo + wHi) / 2);
+      windowBand(grid, ox, oz, wy, wy, half);
+    }
 
     // Dark corner posts running each wall's full height — the vertical accent
     // that stops a storey reading as a plain white box.
@@ -278,9 +338,9 @@ export function buildCastle(
   grid.set(ox, ridge + 1, oz, "gold");
   grid.set(ox, ridge + 2, oz, "gold");
 
-  // Stone lanterns flanking the gate, on the base ledge.
+  // Stone lanterns flanking the gate, on the plinth ledge.
   for (const sx of [-1, 1] as const) {
-    if (rng() < 0.9) grid.set(ox + sx * 6, 5, oz + 14, "lantern");
-    if (rng() < 0.7) grid.set(ox + sx * 10, 5, oz + 11, "lantern");
+    if (rng() < 0.9) grid.set(ox + sx * 6, PLINTH_TOP + 1, oz + 14, "lantern");
+    if (rng() < 0.7) grid.set(ox + sx * 10, PLINTH_TOP + 1, oz + 11, "lantern");
   }
 }

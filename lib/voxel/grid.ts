@@ -1,4 +1,5 @@
 import { BLOCKS, type BlockId } from "./blocks";
+import { isFullShape, packState, type Facing, type Half } from "./shapes";
 
 /**
  * Coordinate packing. Each axis is biased into [0,1023] and packed into one
@@ -23,8 +24,29 @@ export class VoxelGrid {
   /** Per-block brightness multiplier, 1 = unpainted. See `light.ts`. */
   private shades = new Map<number, number>();
 
+  /** Orientation for slabs/stairs. Absent = 0 = facing +X, bottom half. */
+  private states = new Map<number, number>();
+
   set(x: number, y: number, z: number, id: BlockId): void {
     this.cells.set(key(x | 0, y | 0, z | 0), id);
+  }
+
+  /** Place an oriented slab or stair. */
+  setShaped(
+    x: number,
+    y: number,
+    z: number,
+    id: BlockId,
+    facing: Facing,
+    half: Half,
+  ): void {
+    const k = key(x | 0, y | 0, z | 0);
+    this.cells.set(k, id);
+    this.states.set(k, packState(facing, half));
+  }
+
+  getState(x: number, y: number, z: number): number {
+    return this.states.get(key(x | 0, y | 0, z | 0)) ?? 0;
   }
 
   /**
@@ -56,11 +78,27 @@ export class VoxelGrid {
     this.cells.delete(key(x | 0, y | 0, z | 0));
   }
 
-  /** Occludes neighbours (used for face culling + AO). Leaves/air do not. */
+  /**
+   * Blocks light — used for ambient occlusion and the skylight pass. A slab or
+   * stair does cast shade even though it cannot cull a neighbour's face, so this
+   * deliberately ignores shape. Leaves and plants are transparent and do not.
+   */
   isSolid(x: number, y: number, z: number): boolean {
     const id = this.cells.get(key(x | 0, y | 0, z | 0));
     if (!id) return false;
     return !BLOCKS[id].transparent;
+  }
+
+  /**
+   * Fills its cell completely, so it may hide the neighbouring face. ONLY full
+   * cubes qualify: treating a slab as an occluder would punch visible holes in
+   * whatever sits beside it.
+   */
+  isFullOpaque(x: number, y: number, z: number): boolean {
+    const id = this.cells.get(key(x | 0, y | 0, z | 0));
+    if (!id) return false;
+    const def = BLOCKS[id];
+    return !def.transparent && isFullShape(def.shape ?? "cube");
   }
 
   has(x: number, y: number, z: number): boolean {

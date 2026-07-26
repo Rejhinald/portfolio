@@ -4,10 +4,12 @@ import {
   BLOCK,
   BLOCKS,
   FACE_SHADE,
+  PLANT_SHADE,
   vertexAO,
   type BlockId,
 } from "./blocks";
 import { tileUV } from "./atlas";
+import { shapeBoxes, type Box } from "./shapes";
 import type { VoxelGrid } from "./grid";
 
 /**
@@ -28,6 +30,14 @@ const FACES: {
   { n: [0, 0, -1], u: [-1, 0, 0], v: [0, 1, 0] }, // -Z
 ];
 
+/** Corner walk order, matching cornerAO: (-u,-v), (+u,-v), (-u,+v), (+u,+v). */
+const CORNERS = [
+  [-1, -1],
+  [1, -1],
+  [-1, 1],
+  [1, 1],
+] as const;
+
 type Buffers = {
   pos: number[];
   norm: number[];
@@ -45,6 +55,26 @@ const newBuffers = (): Buffers => ({
   sway: [],
   idx: [],
 });
+
+/**
+ * Project a block-local point onto a face's texture axes, giving fractions in
+ * [0,1] of the tile.
+ *
+ * Minecraft locks textures to block space rather than stretching them across a
+ * partial face, so a stair's step shows the middle of its tile instead of a
+ * squashed copy of the whole thing. Doing the same here is what stops slabs
+ * looking like separate, differently-scaled materials.
+ */
+function faceFrac(
+  axis: [number, number, number],
+  lx: number,
+  ly: number,
+  lz: number,
+): number {
+  if (axis[0] !== 0) return axis[0] > 0 ? lx : 1 - lx;
+  if (axis[1] !== 0) return axis[1] > 0 ? ly : 1 - ly;
+  return axis[2] > 0 ? lz : 1 - lz;
+}
 
 /**
  * Ambient occlusion for the four corners of one face, using the 0fps
@@ -69,75 +99,78 @@ function cornerAO(
       az + u[2] * du + v[2] * dv,
     );
 
-  // Corners in (u,v) order: (-,-), (+,-), (-,+), (+,+)
   const out: number[] = [];
-  for (const [su, sv] of [
-    [-1, -1],
-    [1, -1],
-    [-1, 1],
-    [1, 1],
-  ] as const) {
+  for (const [su, sv] of CORNERS) {
     out.push(vertexAO(at(su, 0), at(0, sv), at(su, sv)));
   }
   return out as [number, number, number, number];
 }
 
-function emitFace(
+/** Deterministic per-cell hash in [0,1), for plant jitter. */
+function hash3(x: number, y: number, z: number): number {
+  let h = (x * 374761393 + y * 668265263 + z * 2147483647) | 0;
+  h = (h ^ (h >>> 13)) * 1274126177;
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+/** Emit one face of one box. `boundary` drives culling and AO. */
+function emitBoxFace(
   b: Buffers,
   grid: VoxelGrid,
   x: number,
   y: number,
   z: number,
   f: number,
+  box: Box,
   id: BlockId,
+  shade: number,
 ) {
   const { n, u, v } = FACES[f];
   const def = BLOCKS[id];
   const [tx, ty] = def.faces[f];
-  const [u0, v0, u1, v1] = tileUV(tx, ty);
+  const [a0, c0, a1, c1] = tileUV(tx, ty);
 
-  // Face centre in world units (block centres sit on integer * BLOCK).
-  const cx = (x + n[0] * 0.5) * BLOCK;
-  const cy = (y + n[1] * 0.5) * BLOCK;
-  const cz = (z + n[2] * 0.5) * BLOCK;
-  const h = BLOCK * 0.5;
+  // The face sits at the box's extreme along the normal axis.
+  const lo: [number, number, number] = [box[0], box[1], box[2]];
+  const hi: [number, number, number] = [box[3], box[4], box[5]];
+  const axis = n[0] !== 0 ? 0 : n[1] !== 0 ? 1 : 2;
+  const plane = n[axis] > 0 ? hi[axis] : lo[axis];
+  const boundary = n[axis] > 0 ? plane === 1 : plane === 0;
 
-  const ao = cornerAO(grid, x, y, z, f);
-  // Painted light (light.ts) multiplies into vanilla's face brightness.
-  const shade = FACE_SHADE[f] * grid.getShade(x, y, z);
+  // Unoccluded inside the cube; only a boundary face can see a neighbour.
+  const ao: [number, number, number, number] = boundary
+    ? cornerAO(grid, x, y, z, f)
+    : [3, 3, 3, 3];
+
   const base = b.pos.length / 3;
-
-  // Corner order matches cornerAO: (-u,-v), (+u,-v), (-u,+v), (+u,+v)
-  const corners: [number, number][] = [
-    [-1, -1],
-    [1, -1],
-    [-1, 1],
-    [1, 1],
-  ];
-  const uvs: [number, number][] = [
-    [u0, v0],
-    [u1, v0],
-    [u0, v1],
-    [u1, v1],
-  ];
-
-  // Foliage sways only at its top vertices, so trunks/edges stay anchored.
   const swayTop = def.foliage ? 1 : 0;
 
-  corners.forEach(([su, sv], i) => {
+  for (let i = 0; i < 4; i++) {
+    const [su, sv] = CORNERS[i];
+    // Block-local corner: fixed on the normal axis, at a box extreme on u and v.
+    const l: [number, number, number] = [0, 0, 0];
+    l[axis] = plane;
+    for (const ax2 of [0, 1, 2]) {
+      if (ax2 === axis) continue;
+      const along = u[ax2] !== 0 ? u[ax2] * su : v[ax2] * sv;
+      l[ax2] = along > 0 ? hi[ax2] : lo[ax2];
+    }
+
     b.pos.push(
-      cx + (u[0] * su + v[0] * sv) * h,
-      cy + (u[1] * su + v[1] * sv) * h,
-      cz + (u[2] * su + v[2] * sv) * h,
+      (x - 0.5 + l[0]) * BLOCK,
+      (y - 0.5 + l[1]) * BLOCK,
+      (z - 0.5 + l[2]) * BLOCK,
     );
     b.norm.push(n[0], n[1], n[2]);
-    b.uv.push(uvs[i][0], uvs[i][1]);
-    const l = AO_SHADE[ao[i]] * shade;
-    b.col.push(l, l, l);
-    // Top-vertex test: this corner's world Y is above the block centre.
-    const vy = cy + (u[1] * su + v[1] * sv) * h;
-    b.sway.push(swayTop && vy >= cy - 1e-6 ? 1 : swayTop * 0.35);
-  });
+
+    const tu = faceFrac(u, l[0], l[1], l[2]);
+    const tv = faceFrac(v, l[0], l[1], l[2]);
+    b.uv.push(a0 + (a1 - a0) * tu, c0 + (c1 - c0) * tv);
+
+    const lum = AO_SHADE[ao[i]] * shade;
+    b.col.push(lum, lum, lum);
+    b.sway.push(swayTop && l[1] > 0.5 ? 1 : swayTop * 0.35);
+  }
 
   // 0fps anisotropy fix: flip the diagonal so it faces the darkest corner,
   // otherwise unequal AO interpolation leaves a visible seam (MC-138211).
@@ -147,6 +180,97 @@ function emitFace(
   } else {
     b.idx.push(base + 0, base + 1, base + 3, base + 0, base + 3, base + 2);
   }
+}
+
+/**
+ * A cross-model plant: two vertical quads on the diagonals, as Minecraft draws
+ * grass and flowers. Rendered DoubleSide, so one quad per plane suffices.
+ *
+ * Vanilla jitters plants up to a quarter block horizontally, which is what stops
+ * a scattered lawn looking like it was placed on a grid.
+ */
+function emitPlant(
+  b: Buffers,
+  x: number,
+  y: number,
+  z: number,
+  id: BlockId,
+) {
+  const def = BLOCKS[id];
+  const [tx, ty] = def.faces[0];
+  const [a0, c0, a1, c1] = tileUV(tx, ty);
+
+  const jx = (hash3(x, y, z) - 0.5) * 0.5;
+  const jz = (hash3(z, x, y) - 0.5) * 0.5;
+  const ox = (x + jx) * BLOCK;
+  const oz = (z + jz) * BLOCK;
+  const h = BLOCK * 0.5;
+
+  /** One quad: p0->p1 along the ground, rising by `height`. */
+  const quad = (
+    x0: number,
+    z0: number,
+    x1: number,
+    z1: number,
+    y0: number,
+    y1: number,
+  ) => {
+    const base = b.pos.length / 3;
+    const pts: [number, number, number][] = [
+      [x0, y0, z0],
+      [x1, y0, z1],
+      [x0, y1, z0],
+      [x1, y1, z1],
+    ];
+    const uvs: [number, number][] = [
+      [a0, c0],
+      [a1, c0],
+      [a0, c1],
+      [a1, c1],
+    ];
+    // Flat shade, no AO: vanilla gives every vertex of a plant the same
+    // brightness, and corner-shading them reads as dark smudges on a lit lawn.
+    for (let i = 0; i < 4; i++) {
+      b.pos.push(pts[i][0], pts[i][1], pts[i][2]);
+      b.norm.push(0, 1, 0);
+      b.uv.push(uvs[i][0], uvs[i][1]);
+      b.col.push(PLANT_SHADE, PLANT_SHADE, PLANT_SHADE);
+      b.sway.push(i >= 2 ? 1 : 0); // only the top edge leans
+    }
+    b.idx.push(base, base + 1, base + 3, base, base + 3, base + 2);
+  };
+
+  const yb = (y - 0.5) * BLOCK;
+  if (def.flat) {
+    // Ground-hugging (pink petals): one horizontal quad just off the floor.
+    const yf = yb + BLOCK * 0.06;
+    const base = b.pos.length / 3;
+    const pts: [number, number, number][] = [
+      [ox - h, yf, oz - h],
+      [ox + h, yf, oz - h],
+      [ox - h, yf, oz + h],
+      [ox + h, yf, oz + h],
+    ];
+    const uvs: [number, number][] = [
+      [a0, c0],
+      [a1, c0],
+      [a0, c1],
+      [a1, c1],
+    ];
+    for (let i = 0; i < 4; i++) {
+      b.pos.push(pts[i][0], pts[i][1], pts[i][2]);
+      b.norm.push(0, 1, 0);
+      b.uv.push(uvs[i][0], uvs[i][1]);
+      b.col.push(PLANT_SHADE, PLANT_SHADE, PLANT_SHADE);
+      b.sway.push(0);
+    }
+    b.idx.push(base, base + 1, base + 3, base, base + 3, base + 2);
+    return;
+  }
+
+  const yt = yb + BLOCK;
+  quad(ox - h, oz - h, ox + h, oz + h, yb, yt);
+  quad(ox + h, oz - h, ox - h, oz + h, yb, yt);
 }
 
 function toGeometry(b: Buffers): THREE.BufferGeometry {
@@ -164,42 +288,68 @@ function toGeometry(b: Buffers): THREE.BufferGeometry {
 export type MeshResult = {
   opaque: THREE.BufferGeometry | null;
   cutout: THREE.BufferGeometry | null;
+  /** Cross-model plants — needs a DoubleSide material. */
+  plants: THREE.BufferGeometry | null;
   /** Faces actually emitted (diagnostics). */
   faceCount: number;
 };
 
 /**
- * Convert a voxel grid into at most two merged geometries (opaque + cutout).
- * Interior faces are culled, so a packed volume emits only its shell — the
- * thing InstancedMesh structurally cannot do. AO and per-face brightness are
- * baked into vertex colours, so no per-block lighting work happens at runtime.
+ * Convert a voxel grid into merged geometries: opaque, alpha-cutout, and plants.
+ * Interior faces are culled, so a packed volume emits only its shell — the thing
+ * InstancedMesh structurally cannot do. AO and per-face brightness are baked into
+ * vertex colours, so no per-block lighting work happens at runtime.
  */
 export function meshGrid(grid: VoxelGrid): MeshResult {
   const op = newBuffers();
   const ct = newBuffers();
+  const pl = newBuffers();
   let faceCount = 0;
 
   for (const [x, y, z, id] of grid.entries()) {
     const def = BLOCKS[id];
-    const b = def.cutout ? ct : op;
 
-    for (let f = 0; f < 6; f++) {
-      const { n } = FACES[f];
-      const nx = x + n[0];
-      const ny = y + n[1];
-      const nz = z + n[2];
-      // Cull faces hidden by an opaque neighbour. Cutout blocks also cull
-      // against their own kind so a leaf mass isn't a soup of interior quads.
-      if (grid.isSolid(nx, ny, nz)) continue;
-      if (def.cutout && grid.get(nx, ny, nz) === id) continue;
-      emitFace(b, grid, x, y, z, f, id);
-      faceCount++;
+    if (def.plant) {
+      emitPlant(pl, x, y, z, id);
+      faceCount += def.flat ? 1 : 2;
+      continue;
+    }
+
+    const b = def.cutout ? ct : op;
+    const shape = def.shape ?? "cube";
+    const boxes = shapeBoxes(shape, shape === "cube" ? 0 : grid.getState(x, y, z));
+
+    for (const box of boxes) {
+      for (let f = 0; f < 6; f++) {
+        const { n } = FACES[f];
+        const axis = n[0] !== 0 ? 0 : n[1] !== 0 ? 1 : 2;
+        const plane = n[axis] > 0 ? box[axis + 3] : box[axis];
+        const boundary = n[axis] > 0 ? plane === 1 : plane === 0;
+
+        if (boundary) {
+          const nx = x + n[0];
+          const ny = y + n[1];
+          const nz = z + n[2];
+          // Only a full cube may hide a face. Also cull where identical
+          // neighbours meet, which removes most of a slab run's interior.
+          if (grid.isFullOpaque(nx, ny, nz)) continue;
+          if (
+            grid.get(nx, ny, nz) === id &&
+            (shape === "cube" || grid.getState(nx, ny, nz) === grid.getState(x, y, z))
+          ) {
+            continue;
+          }
+        }
+        emitBoxFace(b, grid, x, y, z, f, box, id, FACE_SHADE[f] * grid.getShade(x, y, z));
+        faceCount++;
+      }
     }
   }
 
   return {
     opaque: op.pos.length ? toGeometry(op) : null,
     cutout: ct.pos.length ? toGeometry(ct) : null,
+    plants: pl.pos.length ? toGeometry(pl) : null,
     faceCount,
   };
 }

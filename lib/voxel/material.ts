@@ -13,6 +13,11 @@ export type VoxelMaterialOpts = {
   hazeBottom: number;
   /** 0 = no sway (reduced motion). */
   windAmp?: number;
+  /**
+   * Cross-model plants are single quads, so they must render from both sides.
+   * One double-sided quad per plane beats emitting both winding orders.
+   */
+  doubleSide?: boolean;
 };
 
 /**
@@ -33,7 +38,8 @@ export function createVoxelMaterial(
   const mat = new THREE.MeshLambertMaterial({
     map: opts.atlas,
     vertexColors: true,
-    side: THREE.FrontSide, // faces are culled, so back faces never show
+    // Cube faces are culled, so back faces never show; plant quads need both.
+    side: opts.doubleSide ? THREE.DoubleSide : THREE.FrontSide,
     ...(opts.cutout
       ? { transparent: false, alphaTest: 0.5 } // cutout: no sorting, no blending
       : {}),
@@ -111,7 +117,8 @@ export function createVoxelMaterial(
   // Required: without a distinct cache key three.js may hand this program to
   // other materials sharing Lambert's default key.
   mat.customProgramCacheKey = () =>
-    `voxel-${opts.cutout ? "cutout" : "opaque"}-${opts.windAmp ?? 1 ? "wind" : "still"}`;
+    `voxel-${opts.cutout ? "cutout" : "opaque"}-${opts.doubleSide ? "ds" : "fs"}` +
+    `-${opts.windAmp ?? 1 ? "wind" : "still"}`;
 
   return mat;
 }

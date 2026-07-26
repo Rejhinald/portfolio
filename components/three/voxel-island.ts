@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { mulberry32 } from "@/lib/three/prng";
 import { PALETTE } from "@/lib/three/palette";
-import { buildAtlas } from "@/lib/voxel/atlas";
+import { loadAtlas } from "@/lib/voxel/atlas";
 import { VoxelGrid } from "@/lib/voxel/grid";
 import { meshGrid } from "@/lib/voxel/mesher";
 import { createVoxelMaterial } from "@/lib/voxel/material";
@@ -10,6 +10,7 @@ import { buildIsland } from "@/lib/voxel/models/island";
 import { buildCastle } from "@/lib/voxel/models/castle";
 import { buildSakuraTree } from "@/lib/voxel/models/tree";
 import { buildTorii } from "@/lib/voxel/models/dressing";
+import { buildGroundCover } from "@/lib/voxel/models/groundcover";
 import type { Tier } from "@/lib/three/quality";
 
 export type VoxelIslandOpts = {
@@ -26,6 +27,8 @@ export type VoxelIsland = {
     blocks: number;
     faces: number;
     triangles: number;
+    /** Ground-cover plants placed by the bonemeal pass. */
+    plants: number;
     /** Wall-clock ms to author + light + mesh the grid, one time at mount. */
     buildMs: number;
   };
@@ -50,20 +53,30 @@ export function createVoxelIsland(opts: VoxelIslandOpts): VoxelIsland {
   buildSakuraTree(grid, -22, 8, rng);
   buildTorii(grid, 0, 24);
 
+  // Bonemeal pass — last, so it can see the finished surface and skip the paved
+  // approach and anything already standing on the grass.
+  const plantCount = buildGroundCover(grid, rng, 30, {
+    density: opts.tier === "static" ? 0.7 : opts.tier === "reduced" ? 0.55 : 1,
+    keepClear: (x, z) => Math.abs(x) <= 2 && z > 14, // the approach + gate mouth
+  });
+
   // Paint light before meshing: shading is baked into vertex colours, so the
   // eave shadows and grounded base have to exist on the grid first.
+  // minSky is deliberately mild: every storey sits under its own 3-block eave,
+  // so an aggressive floor crushed the white plaster walls to grey. The eave
+  // shadow still reads, it just no longer eats the building's local colour.
   paintLight(grid, {
     yDark: -18,
     yLit: 4,
     reach: 7,
-    minSky: 0.55,
+    minSky: 0.74,
     minGravity: 0.62,
   });
 
-  const { opaque, cutout, faceCount } = meshGrid(grid);
+  const { opaque, cutout, plants, faceCount } = meshGrid(grid);
   const buildMs = performance.now() - t0;
 
-  const atlas = buildAtlas();
+  const atlas = loadAtlas();
   const hazeColor = new THREE.Color(PALETTE.washi);
   // Local-space Y where the underside starts dissolving into the page.
   const shared = {
@@ -80,9 +93,9 @@ export function createVoxelIsland(opts: VoxelIslandOpts): VoxelIsland {
   const group = new THREE.Group();
   group.name = "voxel-island";
 
-  const disposables: (THREE.BufferGeometry | THREE.Material | THREE.Texture)[] = [
-    atlas,
-  ];
+  // NOTE: the atlas is deliberately absent — `loadAtlas` returns one shared,
+  // cached texture, so disposing it here would blank the scene on remount.
+  const disposables: (THREE.BufferGeometry | THREE.Material)[] = [];
 
   if (opaque) {
     const mat = createVoxelMaterial({ ...shared });
@@ -104,12 +117,25 @@ export function createVoxelIsland(opts: VoxelIslandOpts): VoxelIsland {
     disposables.push(cutout, mat);
   }
 
+  if (plants) {
+    const mat = createVoxelMaterial({ ...shared, cutout: true, doubleSide: true });
+    const mesh = new THREE.Mesh(plants, mat);
+    mesh.name = "voxel-ground-cover";
+    // Ground cover neither casts nor receives: a lawn of tiny shadow casters is
+    // pure cost, and self-shadowed grass reads as dirt.
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+    group.add(mesh);
+    disposables.push(plants, mat);
+  }
+
   return {
     group,
     stats: {
       blocks: grid.size,
       faces: faceCount,
       triangles: faceCount * 2,
+      plants: plantCount,
       buildMs,
     },
     dispose: () => {

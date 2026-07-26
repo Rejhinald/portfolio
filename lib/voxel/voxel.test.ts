@@ -3,6 +3,17 @@ import { AO_SHADE, BLOCK, FACE_SHADE, vertexAO } from "@/lib/voxel/blocks";
 import { VoxelGrid } from "@/lib/voxel/grid";
 import { tileUV, ATLAS_TILES, UV_INSET } from "@/lib/voxel/atlas";
 import { clusterNoise, paintLight } from "@/lib/voxel/light";
+import {
+  FACING,
+  HALF,
+  isFullShape,
+  outwardFacing,
+  packState,
+  shapeBoxes,
+  stateFacing,
+  stateHalf,
+} from "@/lib/voxel/shapes";
+import { BLOCKS } from "@/lib/voxel/blocks";
 
 describe("vertexAO (0fps rule)", () => {
   it("returns 3 when nothing occludes", () => {
@@ -125,6 +136,129 @@ describe("paintLight", () => {
     paintLight(g, { yDark: 0, yLit: 12, reach: 6, minSky: 0.55, minGravity: 0.8 });
     for (let y = 0; y <= 12; y++) {
       expect(g.getShade(0, y, 0)).toBeGreaterThanOrEqual(0.55 * 0.8 - 1e-9);
+    }
+  });
+});
+
+describe("sub-cube shapes", () => {
+  it("packs and unpacks facing + half", () => {
+    for (const f of [FACING.PX, FACING.NX, FACING.PZ, FACING.NZ]) {
+      for (const h of [HALF.BOTTOM, HALF.TOP]) {
+        const s = packState(f, h);
+        expect(stateFacing(s)).toBe(f);
+        expect(stateHalf(s)).toBe(h);
+      }
+    }
+  });
+
+  it("a cube is one full box", () => {
+    expect(shapeBoxes("cube", 0)).toEqual([[0, 0, 0, 1, 1, 1]]);
+  });
+
+  it("a bottom slab fills only the lower half", () => {
+    const [b] = shapeBoxes("slab", packState(FACING.PX, HALF.BOTTOM));
+    expect(b).toEqual([0, 0, 0, 1, 0.5, 1]);
+  });
+
+  it("a top slab is the vertical mirror of a bottom slab", () => {
+    const [b] = shapeBoxes("slab", packState(FACING.PX, HALF.TOP));
+    expect(b).toEqual([0, 0.5, 0, 1, 1, 1]);
+  });
+
+  it("a stair is a half slab plus a quarter step on the facing side", () => {
+    const boxes = shapeBoxes("stair", packState(FACING.PX, HALF.BOTTOM));
+    expect(boxes).toHaveLength(2);
+    expect(boxes[0]).toEqual([0, 0, 0, 1, 0.5, 1]); // base
+    expect(boxes[1]).toEqual([0.5, 0.5, 0, 1, 1, 1]); // step at +X
+  });
+
+  it("puts the step on the opposite side for the opposite facing", () => {
+    const boxes = shapeBoxes("stair", packState(FACING.NX, HALF.BOTTOM));
+    expect(boxes[1]).toEqual([0, 0.5, 0, 0.5, 1, 1]);
+  });
+
+  it("an upside-down stair mirrors vertically", () => {
+    const boxes = shapeBoxes("stair", packState(FACING.PZ, HALF.TOP));
+    expect(boxes[0]).toEqual([0, 0.5, 0, 1, 1, 1]); // slab on top
+    expect(boxes[1]).toEqual([0, 0, 0.5, 1, 0.5, 1]); // step below
+  });
+
+  it("every shape's boxes stay inside the unit cube", () => {
+    for (const shape of ["cube", "slab", "stair"] as const) {
+      for (let s = 0; s < 8; s++) {
+        for (const b of shapeBoxes(shape, s)) {
+          for (const v of b) {
+            expect(v).toBeGreaterThanOrEqual(0);
+            expect(v).toBeLessThanOrEqual(1);
+          }
+          expect(b[3]).toBeGreaterThan(b[0]);
+          expect(b[4]).toBeGreaterThan(b[1]);
+          expect(b[5]).toBeGreaterThan(b[2]);
+        }
+      }
+    }
+  });
+
+  it("only a cube counts as a full occluder", () => {
+    expect(isFullShape("cube")).toBe(true);
+    expect(isFullShape("slab")).toBe(false);
+    expect(isFullShape("stair")).toBe(false);
+  });
+
+  it("orients outward from the dominant axis", () => {
+    expect(outwardFacing(5, 1)).toBe(FACING.PX);
+    expect(outwardFacing(-5, 1)).toBe(FACING.NX);
+    expect(outwardFacing(1, 5)).toBe(FACING.PZ);
+    expect(outwardFacing(1, -5)).toBe(FACING.NZ);
+  });
+});
+
+describe("VoxelGrid occlusion split", () => {
+  it("a slab blocks light but may not cull a neighbouring face", () => {
+    const g = new VoxelGrid();
+    g.setShaped(0, 0, 0, "roofslab", FACING.PX, HALF.BOTTOM);
+    // Blocks light (so eave shadows and AO still work)...
+    expect(g.isSolid(0, 0, 0)).toBe(true);
+    // ...but is not a full cube, so it must not hide what sits beside it.
+    expect(g.isFullOpaque(0, 0, 0)).toBe(false);
+  });
+
+  it("a full cube does both", () => {
+    const g = new VoxelGrid();
+    g.set(0, 0, 0, "stone");
+    expect(g.isSolid(0, 0, 0)).toBe(true);
+    expect(g.isFullOpaque(0, 0, 0)).toBe(true);
+  });
+
+  it("plants and bars occlude nothing", () => {
+    const g = new VoxelGrid();
+    g.set(0, 0, 0, "shortgrass");
+    g.set(1, 0, 0, "window");
+    for (const x of [0, 1]) {
+      expect(g.isSolid(x, 0, 0)).toBe(false);
+      expect(g.isFullOpaque(x, 0, 0)).toBe(false);
+    }
+  });
+});
+
+describe("block registry integrity", () => {
+  it("every block names six faces", () => {
+    for (const [id, def] of Object.entries(BLOCKS)) {
+      expect(def.faces, id).toHaveLength(6);
+      for (const [tx, ty] of def.faces) {
+        expect(tx, id).toBeGreaterThanOrEqual(0);
+        expect(ty, id).toBeGreaterThanOrEqual(0);
+        expect(tx, id).toBeLessThan(ATLAS_TILES);
+        expect(ty, id).toBeLessThan(ATLAS_TILES);
+      }
+    }
+  });
+
+  it("plants are always cutout and non-occluding", () => {
+    for (const [id, def] of Object.entries(BLOCKS)) {
+      if (!def.plant) continue;
+      expect(def.cutout, id).toBe(true);
+      expect(def.transparent, id).toBe(true);
     }
   });
 });
