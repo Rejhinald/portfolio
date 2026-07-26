@@ -86,6 +86,8 @@ export type BlockId =
   | "gold"
   | "shu"
   | "lantern"
+  | "hanglantern"
+  | "chain"
   | "glow"
   // sub-cube variants — the real build's roofs are made of these
   | "roofslab"
@@ -249,6 +251,21 @@ export const BLOCKS: Record<BlockId, BlockDef> = {
   gold: { faces: all(TILE.gold) },
   shu: { faces: all(TILE.shu) },
   lantern: { faces: all(TILE.lanternLit), emission: 15 },
+  // Hung under the eaves on a chain. Both are sub-cube, so neither may occlude
+  // its neighbours — they go in the cutout pass with the leaves.
+  hanglantern: {
+    faces: all(TILE.lanternLit),
+    shape: "hanglantern",
+    emission: 15,
+    cutout: true,
+    transparent: true,
+  },
+  chain: {
+    faces: all(TILE.window),
+    shape: "chain",
+    cutout: true,
+    transparent: true,
+  },
   glow: { faces: all(TILE.glow), emission: 15 },
 
   // Half-block roof geometry. `prismarine_brick_slab` is the most-used material

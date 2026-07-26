@@ -81,6 +81,10 @@ describe("composed scene integrity", () => {
       const here = extent(x, y, z);
       const above = extent(x, y + 1, z);
       if (!here || !above) continue;
+      // A hanging lantern is SUPPOSED to clear whatever is beneath it — it is
+      // suspended from the chain above, which its bail does reach. Only its
+      // support upward is load-bearing, so it is not an accidental gap.
+      if (grid.get(x, y + 1, z) === "hanglantern") continue;
       // If the cell above is occupied, its underside must meet this top.
       if (above[0] > here[1] + 1e-6) {
         gaps.push(

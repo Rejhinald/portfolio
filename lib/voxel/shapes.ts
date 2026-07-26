@@ -22,7 +22,7 @@ export type Box = readonly [
   z1: number,
 ];
 
-export type Shape = "cube" | "slab" | "stair";
+export type Shape = "cube" | "slab" | "stair" | "chain" | "hanglantern";
 
 /** Which side of the block carries a stair's tall step. */
 export const FACING = { PX: 0, NX: 1, PZ: 2, NZ: 3 } as const;
@@ -54,8 +54,27 @@ export const stateHalf = (s: number): Half => ((s >> 2) & 1) as Half;
  * mirrors the whole thing vertically, which is how Minecraft's upside-down
  * stairs build a soffit under an overhang.
  */
+/**
+ * Vanilla's chain: a 3/16-wide post running the full height of the block. The
+ * real model is two crossed flat quads, but a thin box reads the same at this
+ * scale and keeps every block going through one code path.
+ */
+const CHAIN_BOXES: readonly Box[] = [[0.40625, 0, 0.40625, 0.59375, 1, 0.59375]];
+
+/**
+ * Vanilla's hanging lantern: a 6x8x6 body slung under the block's ceiling, with
+ * a 2x2 bail above it. Hung rather than standing, so it reads as suspended from
+ * the eave instead of resting in mid air.
+ */
+const HANG_LANTERN_BOXES: readonly Box[] = [
+  [0.3125, 0.125, 0.3125, 0.6875, 0.625, 0.6875], // body
+  [0.4375, 0.625, 0.4375, 0.5625, 1, 0.5625], // bail up to the ceiling
+];
+
 export function shapeBoxes(shape: Shape, state: number): readonly Box[] {
   if (shape === "cube") return CUBE_BOXES;
+  if (shape === "chain") return CHAIN_BOXES;
+  if (shape === "hanglantern") return HANG_LANTERN_BOXES;
 
   const top = stateHalf(state) === HALF.TOP;
   const [sy0, sy1] = top ? [0.5, 1] : [0, 0.5]; // the slab part

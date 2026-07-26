@@ -88,20 +88,27 @@ function baseCourse(
   for (let x = ox - half; x <= ox + half; x++)
     for (let z = oz - half; z <= oz + half; z++) {
       const n = clusterNoise(x, y * 2, z, 0.22, 4021);
-      // Gravity: the courses darken toward the footing, so the plinth reads as
-      // load-bearing mass rather than a flat grey box.
-      const low = 1 - y / plinthTop;
       const damp = clusterNoise(x, y, z, 0.16, 6607);
-      // Moss gathers low and on the shaded side, where water would sit.
-      if (low > 0.35 && damp > 0.72) {
-        grid.set(x, y, z, damp > 0.86 ? "moss" : "mossycobble");
+      // Height through the plinth, 0 at the footing to 1 at the top course.
+      const h = y / plinthTop;
+
+      // Moss only, as a sparse accent low down where water would sit. It is the
+      // one non-grey allowed here: brown blocks (dripstone #866c5d, mud brick
+      // #89684f) were what made the masonry read muddy instead of stone.
+      if (h < 0.5 && damp > 0.82) {
+        grid.set(x, y, z, damp > 0.93 ? "moss" : "mossycobble");
         continue;
       }
-      if (low > 0.6 && n < 0.3) {
-        grid.set(x, y, z, "deepslatetiles");
-        continue;
-      }
-      grid.set(x, y, z, n > 0.62 ? "cobble" : n < 0.34 ? "smoothstone" : "stonebrick");
+
+      // Three measured VALUE tiers, lightest at the top: smooth stone (159) ->
+      // the ~125 group -> deepslate (79). Within a tier the choice is texture
+      // only, since those blocks are within a few percent of each other and
+      // could never read as a gradient on their own.
+      let id: BlockId;
+      if (h > 0.72) id = n > 0.5 ? "smoothstone" : "diorite";
+      else if (h > 0.34) id = n > 0.66 ? "cobble" : n < 0.3 ? "stone" : "stonebrick";
+      else id = n > 0.55 ? "deepslate" : "deepslatetiles";
+      grid.set(x, y, z, id);
     }
 }
 
@@ -258,11 +265,18 @@ function tenshuRoof(
   // flood fill, sitting them beneath the eave pools warm light along the wall
   // and spills it through the window openings, lighting the storey from outside
   // in — which is what makes the building glow rather than dotting it with lamps.
+  // Hung on a short chain from the soffit, the way a real overhang carries them:
+  // chain link directly under the eave, lantern swinging below it.
   const under = eave - 1;
+  const hang = (hx: number, hz: number) => {
+    if (grid.has(hx, wallTop - 1, hz) || grid.has(hx, wallTop - 2, hz)) return;
+    grid.set(hx, wallTop - 1, hz, "chain");
+    grid.set(hx, wallTop - 2, hz, "hanglantern");
+  };
   for (let t = -under + 2; t <= under - 2; t += 5) {
     for (const s of [-1, 1] as const) {
-      grid.setIfEmpty(ox + t, wallTop - 1, oz + s * under, "lantern");
-      grid.setIfEmpty(ox + s * under, wallTop - 1, oz + t, "lantern");
+      hang(ox + t, oz + s * under);
+      hang(ox + s * under, oz + t);
     }
   }
 }
@@ -368,7 +382,10 @@ export function buildCastle(
     // Dark timber sill at the foot of the wall; quartz cornice capping it, with
     // the gold/wool band just beneath. Windows go in the rows between, leaving
     // at least one clear course so the white plaster still reads as a mass.
-    annulus(grid, ox, oz, y0, half, half, "beam");
+    // Timber sill, stepping down the wood ramp as the tiers rise so the framing
+    // reads as a system rather than one flat brown: 93 -> 68 -> 59 -> 48.
+    const WOOD: BlockId[] = ["beam", "mangrove", "darkbeam", "darkwood", "darkwood"];
+    annulus(grid, ox, oz, y0, half, half, WOOD[Math.min(i, WOOD.length - 1)]);
     annulus(grid, ox, oz, y1, half, half, "quartz");
     goldWoolBand(grid, ox, oz, y1 - 1, half);
     // Windows get ONE row, not the whole wall. The sill, the gold/wool band and
@@ -390,7 +407,7 @@ export function buildCastle(
       [1, 1],
     ] as const) {
       for (let y = y0; y <= y1; y++) {
-        grid.set(ox + sx * half, y, oz + sz * half, "beam");
+        grid.set(ox + sx * half, y, oz + sz * half, WOOD[Math.min(i, WOOD.length - 1)]);
       }
     }
 
