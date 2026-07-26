@@ -2,95 +2,261 @@ import * as THREE from "three";
 import { mulberry32 } from "@/lib/three/prng";
 import { TILE } from "./blocks";
 
+/**
+ * Procedural block atlas in the "Bare Bones" idiom.
+ *
+ * Bare Bones is the flat, trailer-style Minecraft look, and measuring the real
+ * pack makes its rules unambiguous: **each tile is 1-3 colours**, the accent
+ * covers only 2-20% of the tile, and it is laid out as *structure* (mortar
+ * courses, ribs, borders, grain) or as a few short horizontal dashes — never as
+ * per-pixel noise. Two consequences we rely on:
+ *
+ *  1. There is almost no high-frequency detail, so tiles stay readable when a
+ *     block is only ~8-12 screen px. That is what lets the diorama carry a much
+ *     denser build than a vanilla-textured one could.
+ *  2. Surface interest has to come from *light* (see `light.ts`) rather than
+ *     from busy albedo — which is also the correct way to texture a build.
+ *
+ * Colours are the hanami palette pushed toward Bare Bones' flatness/clarity.
+ */
+
 /** Tile size in px (Minecraft's native block texture resolution). */
 export const TILE_PX = 16;
-/** Atlas is a 4x4 grid of tiles. */
-export const ATLAS_TILES = 4;
-export const ATLAS_PX = TILE_PX * ATLAS_TILES; // 64
+/** Atlas is an 8x8 grid of tiles. */
+export const ATLAS_TILES = 8;
+export const ATLAS_PX = TILE_PX * ATLAS_TILES; // 128
 
 /** Half-texel inset in ATLAS space — stops neighbouring tiles bleeding in. */
 export const UV_INSET = 0.5 / ATLAS_PX;
 
 type Ctx = CanvasRenderingContext2D;
 type RGB = [number, number, number];
+type Tile = readonly [number, number];
 
-const px = (
-  ctx: Ctx,
-  tx: number,
-  ty: number,
-  x: number,
-  y: number,
-  c: RGB,
-  a = 1,
-) => {
+const px = (ctx: Ctx, t: Tile, x: number, y: number, c: RGB, a = 1) => {
   ctx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${a})`;
-  ctx.fillRect(tx * TILE_PX + x, ty * TILE_PX + y, 1, 1);
+  ctx.fillRect(t[0] * TILE_PX + x, t[1] * TILE_PX + y, 1, 1);
 };
 
-const fill = (ctx: Ctx, tx: number, ty: number, c: RGB) => {
+const fill = (ctx: Ctx, t: Tile, c: RGB) => {
   ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
-  ctx.fillRect(tx * TILE_PX, ty * TILE_PX, TILE_PX, TILE_PX);
+  ctx.fillRect(t[0] * TILE_PX, t[1] * TILE_PX, TILE_PX, TILE_PX);
 };
 
-const shift = (c: RGB, d: number): RGB => [
-  Math.max(0, Math.min(255, c[0] + d)),
-  Math.max(0, Math.min(255, c[1] + d)),
-  Math.max(0, Math.min(255, c[2] + d)),
-];
+// ── pattern primitives, one per Bare Bones layout idiom ────────────────────
 
 /**
- * Clustered noise — the core Minecraft texture look.
- *
- * Real MC tiles use CLUSTERED patches, not per-pixel white noise: at typical
- * on-screen block sizes 1px noise degenerates into static, while 2px blobs
- * still read as texture. `step` is the blob size in texels.
+ * Sparse short horizontal runs — the organic idiom (grass, dirt, stone).
+ * `runs` dashes of 2-5px. Deliberately sparse: real Bare Bones dirt is 6
+ * accent pixels out of 256.
  */
-function speckle(
+function dashes(
   ctx: Ctx,
-  tx: number,
-  ty: number,
-  base: RGB,
+  t: Tile,
+  accent: RGB,
   rng: () => number,
-  amount = 0.4,
-  spread = 20,
-  step = 2,
+  runs: number,
 ) {
-  for (let y = 0; y < TILE_PX; y += step) {
-    for (let x = 0; x < TILE_PX; x += step) {
-      if (rng() > amount) continue;
-      const c = shift(base, Math.round((rng() * 2 - 1) * spread));
-      for (let dy = 0; dy < step; dy++) {
-        for (let dx = 0; dx < step; dx++) {
-          // Ragged blob edges: drop the odd texel so patches aren't perfect squares.
-          if (rng() < 0.18) continue;
-          if (x + dx < TILE_PX && y + dy < TILE_PX)
-            px(ctx, tx, ty, x + dx, y + dy, c);
-        }
+  for (let i = 0; i < runs; i++) {
+    const y = Math.floor(rng() * TILE_PX);
+    const len = 2 + Math.floor(rng() * 4);
+    const x0 = Math.floor(rng() * (TILE_PX - len));
+    for (let x = x0; x < x0 + len; x++) px(ctx, t, x, y, accent);
+  }
+}
+
+/** Blobby two-tone fill — the one genuinely noisy vanilla tile (cobble). */
+function blobs(ctx: Ctx, t: Tile, accent: RGB, rng: () => number, amount = 0.4) {
+  const on: boolean[] = [];
+  for (let i = 0; i < TILE_PX * TILE_PX; i++) on.push(rng() < amount);
+  // One smoothing pass turns salt-and-pepper into clumps.
+  for (let y = 0; y < TILE_PX; y++) {
+    for (let x = 0; x < TILE_PX; x++) {
+      let n = 0;
+      for (const [dx, dy] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ] as const) {
+        const nx = (x + dx + TILE_PX) % TILE_PX;
+        const ny = (y + dy + TILE_PX) % TILE_PX;
+        if (on[ny * TILE_PX + nx]) n++;
       }
+      if (n >= 3 || (on[y * TILE_PX + x] && n >= 1))
+        px(ctx, t, x, y, accent);
     }
   }
 }
 
-// Hanami palette, as RGB triples.
+/** Offset masonry courses with 1px mortar (stone brick). */
+function bricks(ctx: Ctx, t: Tile, mortar: RGB, courseH = 8) {
+  for (let y = 0; y < TILE_PX; y++) {
+    for (let x = 0; x < TILE_PX; x++) {
+      const course = Math.floor(y / courseH);
+      const onCourseLine = y % courseH === courseH - 1;
+      // Vertical joints alternate half a brick per course.
+      const joint = (x + (course % 2) * (TILE_PX / 2)) % TILE_PX === TILE_PX - 1;
+      if (onCourseLine || joint) px(ctx, t, x, y, mortar);
+    }
+  }
+}
+
+/** 1px border box (gold block). */
+function frame(ctx: Ctx, t: Tile, accent: RGB) {
+  for (let i = 0; i < TILE_PX; i++) {
+    px(ctx, t, i, 0, accent);
+    px(ctx, t, i, TILE_PX - 1, accent);
+    px(ctx, t, 0, i, accent);
+    px(ctx, t, TILE_PX - 1, i, accent);
+  }
+}
+
+/** Top row + left column only — the quartz/trim idiom. */
+function lFrame(ctx: Ctx, t: Tile, accent: RGB) {
+  for (let i = 0; i < TILE_PX; i++) {
+    px(ctx, t, i, 0, accent);
+    px(ctx, t, 0, i, accent);
+  }
+}
+
+/**
+ * Kawara roof tiles: vertical ribs every 4px plus a horizontal course break.
+ * Japanese tiled roofs read as ribs first, so the ribs run with the slope.
+ */
+function kawara(ctx: Ctx, t: Tile, accent: RGB, courseAt = 8) {
+  for (let y = 0; y < TILE_PX; y++) {
+    for (let x = 0; x < TILE_PX; x++) {
+      if (x % 4 === 3) px(ctx, t, x, y, accent);
+      else if (y % courseAt === courseAt - 1) px(ctx, t, x, y, accent);
+    }
+  }
+}
+
+/** Regular lattice grid — the dark-prismarine idiom, used for ridge caps. */
+function lattice(ctx: Ctx, t: Tile, accent: RGB, step = 4) {
+  for (let y = 0; y < TILE_PX; y++)
+    for (let x = 0; x < TILE_PX; x++)
+      if (x % step === step - 1 || y % step === step - 1)
+        px(ctx, t, x, y, accent);
+}
+
+/** Vertical 1px grain stripes (logs, beams). */
+function vGrain(ctx: Ctx, t: Tile, accent: RGB, rng: () => number) {
+  for (let x = 0; x < TILE_PX; x++) {
+    if (rng() < 0.45) continue;
+    for (let y = 0; y < TILE_PX; y++) if (rng() > 0.25) px(ctx, t, x, y, accent);
+  }
+}
+
+/** Horizontal board seams every 4 rows plus a few grain ticks. */
+function boards(
+  ctx: Ctx,
+  t: Tile,
+  seam: RGB,
+  accent: RGB,
+  rng: () => number,
+) {
+  for (let y = 0; y < TILE_PX; y++) {
+    const isSeam = y % 4 === 3;
+    for (let x = 0; x < TILE_PX; x++) {
+      if (isSeam) px(ctx, t, x, y, seam);
+      else if (rng() < 0.05) px(ctx, t, x, y, accent);
+    }
+  }
+}
+
+/** Concentric square rings (log end grain). */
+function rings(ctx: Ctx, t: Tile, accent: RGB) {
+  const c = (TILE_PX - 1) / 2;
+  for (let y = 0; y < TILE_PX; y++)
+    for (let x = 0; x < TILE_PX; x++) {
+      const r = Math.max(Math.abs(x - c), Math.abs(y - c));
+      if (Math.round(r) % 3 === 0) px(ctx, t, x, y, accent);
+    }
+}
+
+/** 2x2 weave, repeating — the wool idiom (decorative band under the eaves). */
+function weave(ctx: Ctx, t: Tile, accent: RGB) {
+  for (let y = 0; y < TILE_PX; y++)
+    for (let x = 0; x < TILE_PX; x++)
+      if ((Math.floor(x / 2) + Math.floor(y / 2)) % 2 === 0)
+        px(ctx, t, x, y, accent);
+}
+
+/**
+ * Blossom clusters as plus/cross motifs — how Bare Bones draws cherry leaves.
+ * Discrete flower shapes read as blossom at distance where scattered pink
+ * pixels just read as a haze.
+ */
+function blossoms(ctx: Ctx, t: Tile, shades: RGB[], rng: () => number) {
+  const [base, light, mid, deep] = shades;
+  fill(ctx, t, base);
+  // A few transparent bites so the canopy silhouette breaks up against the sky.
+  for (let i = 0; i < 5; i++) {
+    const hx = Math.floor(rng() * TILE_PX);
+    const hy = Math.floor(rng() * TILE_PX);
+    ctx.clearRect(t[0] * TILE_PX + hx, t[1] * TILE_PX + hy, 2, 2);
+  }
+  // Plus-shaped flowers on a loose 5px lattice, jittered.
+  for (let cy = 2; cy < TILE_PX; cy += 5) {
+    for (let cx = 2; cx < TILE_PX; cx += 5) {
+      if (rng() < 0.2) continue;
+      const x = cx + (rng() < 0.5 ? 0 : 1);
+      const y = cy + (rng() < 0.5 ? 0 : 1);
+      const petal = rng() < 0.35 ? mid : light;
+      for (const [dx, dy] of [
+        [0, -1],
+        [-1, 0],
+        [1, 0],
+        [0, 1],
+      ] as const) {
+        const ax = x + dx;
+        const ay = y + dy;
+        if (ax >= 0 && ax < TILE_PX && ay >= 0 && ay < TILE_PX)
+          px(ctx, t, ax, ay, petal);
+      }
+      px(ctx, t, x, y, deep); // stamen
+    }
+  }
+}
+
+// ── palette: hanami hues, Bare Bones flatness ──────────────────────────────
 const C = {
-  wakaba: [143, 168, 107] as RGB,
-  wakabaDeep: [92, 122, 79] as RGB,
-  bark: [92, 74, 58] as RGB,
-  barkDark: [68, 54, 42] as RGB,
-  stone: [124, 134, 132] as RGB,
-  stoneDark: [92, 100, 98] as RGB,
-  stonePath: [150, 156, 152] as RGB,
-  washi: [243, 238, 230] as RGB,
-  paper3: [234, 227, 215] as RGB,
-  roof: [122, 168, 146] as RGB,
-  roofDark: [85, 122, 104] as RGB,
-  gold: [194, 160, 91] as RGB,
-  goldDeep: [140, 110, 63] as RGB,
+  grass: [143, 168, 107] as RGB,
+  grassLit: [161, 186, 125] as RGB,
+  dirt: [138, 106, 69] as RGB,
+  dirtLit: [154, 122, 82] as RGB,
+  stone: [138, 146, 144] as RGB,
+  stoneLit: [153, 160, 158] as RGB,
+  stoneDark: [107, 115, 113] as RGB,
+  path: [152, 160, 157] as RGB,
+  pathDark: [124, 132, 129] as RGB,
+  bark: [70, 47, 56] as RGB,
+  barkLit: [87, 64, 74] as RGB,
+  plank: [138, 106, 69] as RGB,
+  plankSeam: [92, 64, 40] as RGB,
+  beam: [67, 48, 28] as RGB,
+  beamDark: [51, 35, 15] as RGB,
+  plaster: [237, 230, 218] as RGB,
+  quartz: [246, 241, 232] as RGB,
+  quartzDark: [230, 223, 208] as RGB,
+  roof: [111, 168, 149] as RGB,
+  roofDark: [71, 119, 106] as RGB,
+  ridge: [62, 102, 86] as RGB,
+  ridgeDark: [42, 71, 60] as RGB,
+  wool: [35, 39, 45] as RGB,
+  woolDark: [25, 28, 33] as RGB,
+  window: [29, 33, 38] as RGB,
+  windowFrame: [46, 52, 59] as RGB,
+  gold: [227, 196, 104] as RGB,
+  goldDark: [194, 154, 58] as RGB,
   shu: [217, 67, 44] as RGB,
-  shuDeep: [168, 51, 32] as RGB,
-  sakura: [232, 160, 180] as RGB,
-  sakuraLight: [244, 205, 214] as RGB,
-  sakuraDeep: [201, 122, 147] as RGB,
+  shuDark: [184, 52, 31] as RGB,
+  sakura: [239, 168, 196] as RGB,
+  sakuraLight: [247, 203, 221] as RGB,
+  sakuraMid: [232, 149, 180] as RGB,
+  sakuraDeep: [210, 118, 154] as RGB,
   warm: [255, 214, 150] as RGB,
 };
 
@@ -99,130 +265,100 @@ function paintAtlas(canvas: HTMLCanvasElement) {
   const rng = mulberry32(20260726);
   ctx.clearRect(0, 0, ATLAS_PX, ATLAS_PX);
 
-  // ── grass top ──
-  fill(ctx, ...TILE.grassTop, C.wakaba);
-  speckle(ctx, ...TILE.grassTop, C.wakaba, rng, 0.55, 22);
+  // ── terrain ──
+  fill(ctx, TILE.grassTop, C.grass);
+  dashes(ctx, TILE.grassTop, C.grassLit, rng, 5);
 
-  // ── grass side: dirt with a green fringe baked in (MC grass_block_side) ──
-  fill(ctx, ...TILE.grassSide, C.bark);
-  speckle(ctx, ...TILE.grassSide, C.bark, rng, 0.5, 18);
+  // Grass side: dirt with a shallow ragged green fringe (top 3 rows only).
+  fill(ctx, TILE.grassSide, C.dirt);
+  dashes(ctx, TILE.grassSide, C.dirtLit, rng, 3);
   for (let x = 0; x < TILE_PX; x++) {
-    const depth = 2 + Math.floor(rng() * 3); // ragged fringe
+    const depth = 2 + (rng() < 0.4 ? 1 : 0);
     for (let y = 0; y < depth; y++) {
-      px(ctx, ...TILE.grassSide, x, y, shift(C.wakaba, Math.round((rng() * 2 - 1) * 20)));
+      px(ctx, TILE.grassSide, x, y, rng() < 0.25 ? C.grassLit : C.grass);
     }
   }
 
-  // ── dirt ──
-  fill(ctx, ...TILE.dirt, C.bark);
-  speckle(ctx, ...TILE.dirt, C.bark, rng, 0.6, 22);
+  fill(ctx, TILE.dirt, C.dirt);
+  dashes(ctx, TILE.dirt, C.dirtLit, rng, 3);
 
-  // ── stone ──
-  fill(ctx, ...TILE.stone, C.stone);
-  speckle(ctx, ...TILE.stone, C.stone, rng, 0.5, 18);
+  fill(ctx, TILE.stone, C.stone);
+  dashes(ctx, TILE.stone, C.stoneLit, rng, 8);
 
-  // ── cobble: clustered stones with dark mortar ──
-  fill(ctx, ...TILE.cobble, C.stoneDark);
-  for (let by = 0; by < 4; by++) {
-    for (let bx = 0; bx < 4; bx++) {
-      const w = 3 + Math.floor(rng() * 2);
-      const h = 3 + Math.floor(rng() * 2);
-      const tone = shift(C.stone, Math.round((rng() * 2 - 1) * 22));
-      for (let y = 0; y < h; y++)
-        for (let x = 0; x < w; x++)
-          px(ctx, ...TILE.cobble, bx * 4 + x, by * 4 + y, tone);
-    }
-  }
+  fill(ctx, TILE.cobble, C.stone);
+  blobs(ctx, TILE.cobble, C.stoneDark, rng, 0.42);
 
-  // ── log side: vertical bark grain ──
-  fill(ctx, ...TILE.logSide, C.bark);
-  for (let x = 0; x < TILE_PX; x++) {
-    const d = Math.round((rng() * 2 - 1) * 20);
-    for (let y = 0; y < TILE_PX; y++) {
-      const g = rng() > 0.82 ? -14 : 0;
-      px(ctx, ...TILE.logSide, x, y, shift(C.bark, d + g));
-    }
-  }
+  fill(ctx, TILE.stonebrick, C.stone);
+  bricks(ctx, TILE.stonebrick, C.stoneDark, 8);
 
-  // ── log end: concentric rings ──
-  fill(ctx, ...TILE.logEnd, C.barkDark);
-  const cx = 7.5;
-  for (let y = 0; y < TILE_PX; y++) {
-    for (let x = 0; x < TILE_PX; x++) {
-      const r = Math.hypot(x - cx, y - cx);
-      const ring = Math.floor(r) % 2 === 0;
-      px(ctx, ...TILE.logEnd, x, y, ring ? shift(C.bark, 16) : C.bark);
-    }
-  }
+  fill(ctx, TILE.path, C.path);
+  bricks(ctx, TILE.path, C.pathDark, 4);
 
-  // ── leaves: sakura canopy with alpha holes (cutout) ──
-  ctx.clearRect(TILE.leaves[0] * TILE_PX, TILE.leaves[1] * TILE_PX, TILE_PX, TILE_PX);
-  const shades = [C.sakura, C.sakuraLight, C.sakuraDeep];
-  // 2x2 blossom clusters with gaps — chunky enough to read at block scale.
-  for (let y = 0; y < TILE_PX; y += 2) {
-    for (let x = 0; x < TILE_PX; x += 2) {
-      if (rng() < 0.1) continue; // hole -> transparent, alphaTest cuts it
-      const c = shift(
-        shades[Math.floor(rng() * shades.length)],
-        Math.round((rng() * 2 - 1) * 10),
-      );
-      for (let dy = 0; dy < 2; dy++)
-        for (let dx = 0; dx < 2; dx++)
-          if (rng() > 0.12) px(ctx, ...TILE.leaves, x + dx, y + dy, c);
-    }
-  }
+  // ── wood + foliage ──
+  fill(ctx, TILE.logSide, C.bark);
+  vGrain(ctx, TILE.logSide, C.barkLit, rng);
 
-  // ── plank: horizontal boards ──
-  fill(ctx, ...TILE.plank, C.bark);
-  for (let y = 0; y < TILE_PX; y++) {
-    const board = Math.floor(y / 4);
-    const d = 8 - board * 5;
-    for (let x = 0; x < TILE_PX; x++) {
-      const seam = y % 4 === 3;
-      px(ctx, ...TILE.plank, x, y, shift(C.bark, seam ? -20 : d + (rng() > 0.85 ? -8 : 0)));
-    }
-  }
+  fill(ctx, TILE.logEnd, C.barkLit);
+  rings(ctx, TILE.logEnd, C.bark);
 
-  // ── plaster: washi wall ──
-  fill(ctx, ...TILE.plaster, C.washi);
-  speckle(ctx, ...TILE.plaster, C.washi, rng, 0.35, 10);
-  for (let x = 0; x < TILE_PX; x++) px(ctx, ...TILE.plaster, x, 15, C.paper3);
+  ctx.clearRect(
+    TILE.leaves[0] * TILE_PX,
+    TILE.leaves[1] * TILE_PX,
+    TILE_PX,
+    TILE_PX,
+  );
+  blossoms(
+    ctx,
+    TILE.leaves,
+    [C.sakura, C.sakuraLight, C.sakuraMid, C.sakuraDeep],
+    rng,
+  );
 
-  // ── roof: copper-green tiles with ridge lines ──
-  fill(ctx, ...TILE.roof, C.roof);
-  speckle(ctx, ...TILE.roof, C.roof, rng, 0.35, 14);
-  for (let y = 0; y < TILE_PX; y++) {
-    for (let x = 0; x < TILE_PX; x++) {
-      if (x % 4 === 0) px(ctx, ...TILE.roof, x, y, C.roofDark);
-      if (y % 8 === 7) px(ctx, ...TILE.roof, x, y, shift(C.roofDark, -6));
-    }
-  }
+  fill(ctx, TILE.plank, C.plank);
+  boards(ctx, TILE.plank, C.plankSeam, C.plankSeam, rng);
 
-  // ── gold ──
-  fill(ctx, ...TILE.gold, C.gold);
-  speckle(ctx, ...TILE.gold, C.gold, rng, 0.4, 20);
-  for (let i = 0; i < TILE_PX; i++) px(ctx, ...TILE.gold, i, i, shift(C.gold, 26));
+  fill(ctx, TILE.beam, C.beam);
+  vGrain(ctx, TILE.beam, C.beamDark, rng);
 
-  // ── shu (vermillion, for the torii) ──
-  fill(ctx, ...TILE.shu, C.shu);
-  speckle(ctx, ...TILE.shu, C.shu, rng, 0.3, 16);
-  for (let y = 0; y < TILE_PX; y++) px(ctx, ...TILE.shu, 15, y, C.shuDeep);
+  // ── castle ──
+  // Plaster is deliberately FLAT: Bare Bones' white_concrete is a single colour,
+  // and the big white wall masses get all their form from baked light instead.
+  fill(ctx, TILE.plaster, C.plaster);
 
-  // ── lantern side (stone) + lit face ──
-  fill(ctx, ...TILE.lanternSide, C.stone);
-  speckle(ctx, ...TILE.lanternSide, C.stone, rng, 0.45, 16);
-  fill(ctx, ...TILE.lanternLit, C.stone);
-  speckle(ctx, ...TILE.lanternLit, C.stone, rng, 0.4, 14);
+  fill(ctx, TILE.quartz, C.quartz);
+  lFrame(ctx, TILE.quartz, C.quartzDark);
+
+  fill(ctx, TILE.roof, C.roof);
+  kawara(ctx, TILE.roof, C.roofDark, 8);
+
+  fill(ctx, TILE.roofDark, C.ridge);
+  lattice(ctx, TILE.roofDark, C.ridgeDark, 4);
+
+  fill(ctx, TILE.wool, C.wool);
+  weave(ctx, TILE.wool, C.woolDark);
+
+  // Window: dark recess with a lit frame, standing in for the guide's
+  // iron-trapdoor-over-black-wool window bands.
+  fill(ctx, TILE.window, C.window);
+  frame(ctx, TILE.window, C.windowFrame);
+  for (let y = 3; y < TILE_PX - 3; y++) px(ctx, TILE.window, 7, y, C.windowFrame);
+
+  // ── accents ──
+  fill(ctx, TILE.gold, C.gold);
+  frame(ctx, TILE.gold, C.goldDark);
+
+  fill(ctx, TILE.shu, C.shu);
+  frame(ctx, TILE.shu, C.shuDark);
+
+  fill(ctx, TILE.lanternSide, C.stone);
+  dashes(ctx, TILE.lanternSide, C.stoneDark, rng, 4);
+
+  fill(ctx, TILE.lanternLit, C.stone);
   for (let y = 4; y < 12; y++)
-    for (let x = 4; x < 12; x++)
-      px(ctx, ...TILE.lanternLit, x, y, shift(C.warm, Math.round((rng() * 2 - 1) * 10)));
-
-  // ── path: stone slab with mortar edges ──
-  fill(ctx, ...TILE.path, C.stonePath);
-  speckle(ctx, ...TILE.path, C.stonePath, rng, 0.45, 16);
-  for (let i = 0; i < TILE_PX; i++) {
-    px(ctx, ...TILE.path, i, 0, C.stoneDark);
-    px(ctx, ...TILE.path, 0, i, C.stoneDark);
+    for (let x = 4; x < 12; x++) px(ctx, TILE.lanternLit, x, y, C.warm);
+  for (let i = 4; i < 12; i++) {
+    px(ctx, TILE.lanternLit, i, 4, C.gold);
+    px(ctx, TILE.lanternLit, 4, i, C.gold);
   }
 }
 

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { AO_SHADE, BLOCK, FACE_SHADE, vertexAO } from "@/lib/voxel/blocks";
 import { VoxelGrid } from "@/lib/voxel/grid";
 import { tileUV, ATLAS_TILES, UV_INSET } from "@/lib/voxel/atlas";
+import { clusterNoise, paintLight } from "@/lib/voxel/light";
 
 describe("vertexAO (0fps rule)", () => {
   it("returns 3 when nothing occludes", () => {
@@ -95,11 +96,59 @@ describe("atlas UVs", () => {
 });
 
 describe("scale", () => {
-  it("uses one uniform block size sized for a chunky on-screen voxel", () => {
-    expect(BLOCK).toBeCloseTo(0.26, 6);
-    // ~13-block island radius stays in the same world-space ballpark as the
-    // previous low-poly island (2.6-3.4 units) so framing/camera values hold.
-    expect(13 * BLOCK).toBeGreaterThan(2.6);
-    expect(13 * BLOCK).toBeLessThan(3.6);
+  it("keeps the denser build inside the world footprint the camera is framed for", () => {
+    expect(BLOCK).toBeCloseTo(0.115, 6);
+    // The island rim reaches ~28 blocks, so the full span is ~56 blocks. That
+    // has to stay in the same 6-7 unit ballpark the camera was set up for.
+    const span = 56 * BLOCK;
+    expect(span).toBeGreaterThan(6);
+    expect(span).toBeLessThan(7.5);
+  });
+});
+
+describe("paintLight", () => {
+  it("darkens a covered block and leaves an open one at full brightness", () => {
+    const g = new VoxelGrid();
+    g.set(0, 0, 0, "stone"); // open to the sky
+    g.set(5, 0, 5, "stone"); // roofed over
+    for (let y = 1; y <= 4; y++) g.set(5, y, 5, "stone");
+
+    paintLight(g, { yDark: -10, yLit: 0, reach: 6 });
+
+    expect(g.getShade(0, 0, 0)).toBeCloseTo(1, 6);
+    expect(g.getShade(5, 0, 5)).toBeLessThan(0.8);
+  });
+
+  it("never drives a block darker than the configured floor", () => {
+    const g = new VoxelGrid();
+    g.box(0, 0, 0, 0, 12, 0, "stone");
+    paintLight(g, { yDark: 0, yLit: 12, reach: 6, minSky: 0.55, minGravity: 0.8 });
+    for (let y = 0; y <= 12; y++) {
+      expect(g.getShade(0, y, 0)).toBeGreaterThanOrEqual(0.55 * 0.8 - 1e-9);
+    }
+  });
+});
+
+describe("clusterNoise", () => {
+  it("stays in range and is deterministic", () => {
+    for (let i = 0; i < 50; i++) {
+      const v = clusterNoise(i * 3, i, i * 7);
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThanOrEqual(1);
+    }
+    expect(clusterNoise(4, 5, 6)).toBe(clusterNoise(4, 5, 6));
+  });
+
+  it("varies smoothly, so materials form patches instead of speckle", () => {
+    // Neighbouring cells must be close together, or the field would behave like
+    // per-block randomness — the exact thing it exists to avoid.
+    let maxJump = 0;
+    for (let x = 0; x < 40; x++) {
+      maxJump = Math.max(
+        maxJump,
+        Math.abs(clusterNoise(x, 0, 0) - clusterNoise(x + 1, 0, 0)),
+      );
+    }
+    expect(maxJump).toBeLessThan(0.35);
   });
 });

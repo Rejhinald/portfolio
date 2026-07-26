@@ -63,12 +63,15 @@ export function HanamiDiorama({ className }: { className?: string }) {
         const wide = width / height > 1.15;
         scene.fog = new THREE.Fog(PALETTE.sora, 11, 26);
 
-        // Ambient-dominant lighting: vertex colours already carry Minecraft's
-        // faceShade * AO, so the directional light is weak and exists mainly to
-        // cast the (static) shadow map.
-        scene.add(new THREE.HemisphereLight(PALETTE.sora, PALETTE.wakaba, 1.35));
-        scene.add(new THREE.AmbientLight(0xffffff, 0.32));
-        const sun = new THREE.DirectionalLight(0xfff4e0, 0.55);
+        // Lighting is deliberately almost FLAT, summing to ~1.0 irradiance.
+        // All the directionality already lives in the vertex colours (vanilla's
+        // faceShade * AO, times the painted skylight), so any extra light on top
+        // just double-counts — at 1.67 it blew mid-grey stone out to near-white
+        // and flattened the whole palette. The hemisphere contributes hue rather
+        // than brightness, and the sun exists mainly to cast the static shadow.
+        scene.add(new THREE.AmbientLight(0xffffff, 0.68));
+        scene.add(new THREE.HemisphereLight(PALETTE.sora, PALETTE.wakaba, 0.22));
+        const sun = new THREE.DirectionalLight(0xfff4e0, 0.25);
         sun.position.set(4.5, 8, 3.5);
         sun.name = "sun";
         scene.add(sun);
@@ -105,8 +108,9 @@ export function HanamiDiorama({ className }: { className?: string }) {
 
         // Framing (unchanged from the low-poly version): centred, upper area.
         const ISLAND_X = wide ? 0 : 0.1;
-        // Sits high enough that the voxel spike clears the name lockup below.
-        const BASE_Y = wide ? 3.6 : 3.85;
+        // Sits high enough that the voxel spike clears the name lockup below,
+        // but low enough that the tenshu's finial clears the nav above.
+        const BASE_Y = wide ? 2.95 : 3.25;
         holder.position.set(ISLAND_X, BASE_Y, 0);
         holder.scale.setScalar(wide ? 0.56 : 0.42);
         scene.add(holder);
@@ -125,15 +129,30 @@ export function HanamiDiorama({ className }: { className?: string }) {
         mist.mesh.position.set(ISLAND_X, wide ? 1.5 : 1.1, 0);
         scene.add(mist.mesh);
 
-        const baseCam = new THREE.Vector3(0, wide ? 2.7 : 3.05, wide ? 9.3 : 8.0);
-        const target = new THREE.Vector3(wide ? 0 : 0.1, wide ? 2.65 : 3.05, 0);
+        // Sit ABOVE the island's grass plane and tilt down ~10°, so the surface
+        // — grass ring, approach path, torii footing — actually reads. Level
+        // with it the top face went edge-on and the island looked like a plate;
+        // much steeper and a building this tall stops reading as a tower.
+        // The aim point stays BELOW the island so the tenshu keeps the upper
+        // half of the frame and clears the nav.
+        const baseCam = new THREE.Vector3(
+          0,
+          BASE_Y + (wide ? 1.1 : 1.25),
+          wide ? 9.6 : 8.4,
+        );
+        const target = new THREE.Vector3(
+          wide ? 0 : 0.1,
+          BASE_Y - (wide ? 0.5 : 0.3),
+          0,
+        );
         camera.position.copy(baseCam);
         camera.lookAt(target);
 
         if (process.env.NODE_ENV !== "production") {
           // Budget check: expect ~1-3 draw calls and ~20-40k triangles.
           console.info(
-            `[voxel] ${island.stats.blocks} blocks -> ${island.stats.faces} faces (${island.stats.triangles} tris)`,
+            `[voxel] ${island.stats.blocks} blocks -> ${island.stats.faces} faces ` +
+              `(${island.stats.triangles} tris) in ${island.stats.buildMs.toFixed(0)}ms`,
           );
         }
 

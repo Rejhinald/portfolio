@@ -1,29 +1,35 @@
 import { randRange } from "@/lib/three/prng";
 import type { BlockId } from "@/lib/voxel/blocks";
 import type { VoxelGrid } from "@/lib/voxel/grid";
+import { clusterNoise } from "@/lib/voxel/light";
 
 const TAU = Math.PI * 2;
 
-/** Grass cap is y=0; the stone body hangs from y=-3 down to a spike at y=-14. */
-const STONE_TOP_Y = -3;
-const TIP_Y = -14;
+/**
+ * Grass cap is y=0; the stone body hangs from y=-5 down to a spike at y=-22.
+ * The spike is deliberately short: its lowest courses are hazed into the page
+ * anyway, so the vertical budget is better spent on the castle above.
+ */
+const STONE_TOP_Y = -5;
+const TIP_Y = -22;
 
 /** Loop bound — nothing on the island reaches further out than this. */
-const BOUND = 15;
+const BOUND = 32;
 
 /**
- * Floating island terrain, centred on (0,0): grass cap, two dirt layers and a
+ * Floating island terrain, centred on (0,0): grass cap, three soil layers and a
  * craggy stone spike underneath, plus a winding path and a few rim boulders.
  *
- * Authored entirely in integer block coordinates on the shared grid.
+ * Authored entirely in integer block coordinates on the shared grid. Sized to
+ * carry the 23-block-wide castle base with room for the tree and torii.
  */
 export function buildIsland(grid: VoxelGrid, rng: () => number): void {
   // --- silhouette ----------------------------------------------------------
   // One radius sample per compass direction, cosine-blended between samples so
-  // the rim wobbles between ~11.5 and ~13.5 blocks instead of being a circle.
-  const SAMPLES = 24;
+  // the rim wobbles between ~19 and ~22 blocks instead of being a circle.
+  const SAMPLES = 32;
   const rim: number[] = [];
-  for (let i = 0; i < SAMPLES; i++) rim.push(randRange(rng, 11.5, 13.5));
+  for (let i = 0; i < SAMPLES; i++) rim.push(randRange(rng, 27, 30));
 
   /** Rim radius for a direction (radians), smoothly interpolated + wrapped. */
   const rimAt = (angle: number): number => {
@@ -34,69 +40,103 @@ export function buildIsland(grid: VoxelGrid, rng: () => number): void {
     return rim[i] * (1 - s) + rim[(i + 1) % SAMPLES] * s;
   };
 
+  // Per-column lookups, computed ONCE and reused by every layer. Recomputing
+  // atan2/hypot per cell per layer cost ~30x this over the ~27 stone courses,
+  // which is most of the island's build time on a phone.
+  const SIDE = BOUND * 2 + 1;
+  const rimTable = new Float32Array(SIDE * SIDE);
+  const leanTable = new Float32Array(SIDE * SIDE);
+  const distTable = new Float32Array(SIDE * SIDE);
+  for (let x = -BOUND; x <= BOUND; x++)
+    for (let z = -BOUND; z <= BOUND; z++) {
+      const i = (x + BOUND) * SIDE + (z + BOUND);
+      const a = Math.atan2(z, x);
+      rimTable[i] = rimAt(a);
+      leanTable[i] = Math.cos(a - 0.6);
+      distTable[i] = Math.sqrt(x * x + z * z);
+    }
+
   /**
-   * Fill one horizontal slab. `radiusOf` may vary per direction; `blockAt` is a
-   * callback so the stone layers can mix in cobble as they go.
+   * Fill one horizontal slab. `radiusAt` receives the precomputed rim radius
+   * and lean factor for the column; `blockAt` is a callback so the stone layers
+   * can mix in cobble as they go.
    */
   const slab = (
     y: number,
-    radiusOf: (angle: number) => number,
-    blockAt: () => BlockId,
+    radiusAt: (rim: number, lean: number) => number,
+    blockAt: (x: number, z: number) => BlockId,
   ): void => {
     for (let x = -BOUND; x <= BOUND; x++)
-      for (let z = -BOUND; z <= BOUND; z++)
-        if (Math.hypot(x, z) <= radiusOf(Math.atan2(z, x)))
-          grid.set(x, y, z, blockAt());
+      for (let z = -BOUND; z <= BOUND; z++) {
+        const i = (x + BOUND) * SIDE + (z + BOUND);
+        if (distTable[i] <= radiusAt(rimTable[i], leanTable[i]))
+          grid.set(x, y, z, blockAt(x, z));
+      }
   };
 
-  // Grass cap, then two dirt layers stepping in ~1 and ~2.5 blocks so the
-  // topsoil visibly tapers before the rock takes over.
-  slab(0, rimAt, () => "grass");
-  slab(-1, (a) => rimAt(a) - 1, () => "dirt");
-  slab(-2, (a) => rimAt(a) - 2.5, () => "dirt");
+  // Grass cap, then soil layers stepping in so the topsoil visibly tapers
+  // before the rock takes over.
+  slab(0, (rim) => rim, () => "grass");
+  slab(-1, (rim) => rim - 1.5, () => "dirt");
+  slab(-2, (rim) => rim - 3, () => "dirt");
+  slab(-3, (rim) => rim - 5, () => "dirt");
+  slab(-4, (rim) => rim - 7.5, () => "dirt");
 
   // --- stone body ----------------------------------------------------------
-  // Radius shrinks roughly linearly from ~10 to a 1-block point. Per-layer
-  // jitter (+/-1) plus a little of the rim wobble keeps it craggy, not conical.
-  // ~8% of the rock is cobble for texture variation.
+  // Radius follows a convex curve rather than a straight line, so the rock
+  // bulges under the soil and then draws down to a point — a hanging crag, not
+  // a funnel. Per-layer jitter and a shelf every few courses keep it craggy.
+  // Cobble arrives in patches (cluster noise), never as scattered single blocks.
   for (let y = STONE_TOP_Y; y >= TIP_Y; y--) {
     const t = (STONE_TOP_Y - y) / (STONE_TOP_Y - TIP_Y); // 0 at top, 1 at tip
-    const r = Math.max(0.6, 10 - 9.4 * t + randRange(rng, -1, 1));
+    const shelf = y % 4 === 0 ? 2.2 : 0; // ledges that catch the light
+    // Starts NARROWER than the soil above it (the -4 dirt layer is ~rim-7.5),
+    // so the rock reads as tucked under the island rather than bulging past it.
+    const r = Math.max(
+      0.6,
+      19 * Math.pow(1 - t, 1.15) + shelf + randRange(rng, -2, 2),
+    );
     slab(
       y,
-      (a) => r + 0.4 * (rimAt(a) - 12.5),
-      () => (rng() < 0.08 ? "cobble" : "stone"),
+      // Lean the crag off-axis as it descends, so it hangs rather than funnels.
+      (rim, lean) => r + 0.3 * (rim - 28.5) + 2 * t * lean,
+      (x, z) => (clusterNoise(x, y, z, 0.16, 991) > 0.6 ? "cobble" : "stone"),
     );
   }
 
   // --- surface dressing ----------------------------------------------------
-  // A 1-wide trail winding in from the torii side toward the castle door.
+  // A 2-wide paved approach winding in from the torii toward the castle steps.
   const TRAIL: readonly [number, number][] = [
-    [4, 5],
-    [4, 4],
-    [3, 3],
-    [3, 2],
-    [2, 2],
-    [2, 1],
-    [1, 1],
-    [1, 0],
-    [0, -1],
+    [0, 26],
+    [0, 25],
+    [0, 24],
+    [1, 23],
+    [1, 22],
+    [1, 21],
+    [0, 20],
+    [0, 19],
+    [0, 18],
+    [0, 17],
   ];
-  for (const [x, z] of TRAIL) grid.set(x, 0, z, "path");
+  for (const [x, z] of TRAIL) {
+    grid.set(x, 0, z, "path");
+    grid.set(x + 1, 0, z, "path");
+  }
 
-  // 2-3 loose boulders perched inside the rim, spread roughly evenly around
+  // 3-4 loose boulders perched inside the rim, spread roughly evenly around
   // the island, for a bumpier silhouette against the sky.
-  const count = 2 + Math.floor(rng() * 2);
+  const count = 3 + Math.floor(rng() * 2);
   const spin = rng() * TAU;
   for (let i = 0; i < count; i++) {
-    const a = spin + (i * TAU) / 3 + randRange(rng, -0.3, 0.3);
-    const r = rimAt(a) - randRange(rng, 2.5, 3.5);
+    const a = spin + (i * TAU) / count + randRange(rng, -0.3, 0.3);
+    const r = rimAt(a) - randRange(rng, 2.5, 4.5);
     // Step inward until the rounded cell is safely on grass (never overhanging).
-    for (let k = 0; k < 3; k++) {
+    for (let k = 0; k < 4; k++) {
       const bx = Math.round(Math.cos(a) * (r - k));
       const bz = Math.round(Math.sin(a) * (r - k));
-      if (Math.hypot(bx, bz) <= rimAt(Math.atan2(bz, bx)) - 1) {
+      if (Math.hypot(bx, bz) <= rimAt(Math.atan2(bz, bx)) - 2) {
         grid.set(bx, 1, bz, "stone");
+        if (rng() < 0.5) grid.set(bx, 2, bz, "cobble");
         break;
       }
     }

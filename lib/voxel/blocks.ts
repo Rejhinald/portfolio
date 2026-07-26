@@ -7,22 +7,31 @@
 
 /**
  * Uniform block size in world units — the single scale for the whole diorama.
- * Chosen so a ~13-block island radius fills roughly the same world space as the
- * old low-poly island (13 * 0.26 ≈ 3.4) while keeping blocks visually chunky:
- * below ~16 on-screen px a voxel stops reading as a block and turns to noise.
+ *
+ * The build is ~56 blocks across, so this keeps it in the same world-space
+ * footprint (~6.5 units) the camera was already framed for. That works out to
+ * roughly 10 on-screen px per block on desktop: too small for vanilla's busy
+ * 16px tiles, but ample for the flat Bare Bones-style atlas, which has almost
+ * no high-frequency detail to alias. The flat textures are what buy the density.
  */
-export const BLOCK = 0.26;
+export const BLOCK = 0.115;
 
 export type BlockId =
   | "grass"
   | "dirt"
   | "stone"
   | "cobble"
+  | "stonebrick"
   | "log"
   | "leaves"
   | "plank"
+  | "beam"
   | "plaster"
+  | "quartz"
   | "roof"
+  | "roofdark"
+  | "wool"
+  | "window"
   | "gold"
   | "shu"
   | "lantern"
@@ -40,29 +49,35 @@ export type BlockDef = {
 };
 
 /**
- * Atlas tile coordinates. The atlas is a 4x4 grid of 16px tiles (64x64).
- * Row 0: grass-top, grass-side, dirt, stone
- * Row 1: cobble, log-side, log-end, leaves
- * Row 2: plank, plaster, roof, gold
- * Row 3: shu, lantern-side, lantern-lit, path
+ * Atlas tile coordinates. The atlas is an 8x8 grid of 16px tiles (128x128).
+ * Row 0: terrain — grass-top, grass-side, dirt, stone, cobble, stone-brick, path
+ * Row 1: wood + foliage — log-side, log-end, leaves, plank, beam
+ * Row 2: castle — plaster, quartz, roof, roof-dark, wool, window
+ * Row 3: accents — gold, shu, lantern-side, lantern-lit
  */
 export const TILE = {
   grassTop: [0, 0],
   grassSide: [1, 0],
   dirt: [2, 0],
   stone: [3, 0],
-  cobble: [0, 1],
-  logSide: [1, 1],
-  logEnd: [2, 1],
-  leaves: [3, 1],
-  plank: [0, 2],
-  plaster: [1, 2],
+  cobble: [4, 0],
+  stonebrick: [5, 0],
+  path: [6, 0],
+  logSide: [0, 1],
+  logEnd: [1, 1],
+  leaves: [2, 1],
+  plank: [3, 1],
+  beam: [4, 1],
+  plaster: [0, 2],
+  quartz: [1, 2],
   roof: [2, 2],
-  gold: [3, 2],
-  shu: [0, 3],
-  lanternSide: [1, 3],
-  lanternLit: [2, 3],
-  path: [3, 3],
+  roofDark: [3, 2],
+  wool: [4, 2],
+  window: [5, 2],
+  gold: [0, 3],
+  shu: [1, 3],
+  lanternSide: [2, 3],
+  lanternLit: [3, 3],
 } as const satisfies Record<string, readonly [number, number]>;
 
 const all = (t: readonly [number, number]): [number, number][] =>
@@ -102,9 +117,15 @@ export const BLOCKS: Record<BlockId, BlockDef> = {
     foliage: true,
     transparent: true,
   },
+  stonebrick: { faces: all(TILE.stonebrick) },
   plank: { faces: all(TILE.plank) },
+  beam: { faces: column(TILE.logEnd, TILE.beam) },
   plaster: { faces: all(TILE.plaster) },
+  quartz: { faces: all(TILE.quartz) },
   roof: { faces: all(TILE.roof) },
+  roofdark: { faces: all(TILE.roofDark) },
+  wool: { faces: all(TILE.wool) },
+  window: { faces: all(TILE.window) },
   gold: { faces: all(TILE.gold) },
   shu: { faces: all(TILE.shu) },
   lantern: {

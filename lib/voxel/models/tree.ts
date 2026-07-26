@@ -3,11 +3,11 @@ import type { VoxelGrid } from "../grid";
 /**
  * Voxel sakura tree — one uniform block size, authored in integer block coords.
  *
- * Shape: a 1x1 "log" trunk (with an optional 2x2 flare at the base), 2-4 short
- * log arms staircasing outward+upward from the upper trunk, and a ragged
- * "leaves" blob centred above the trunk top with smaller clusters at each arm
- * tip. The canopy edge is a jittered ellipsoid rather than a clean sphere, and
- * ~12% of cells are punched out, so it reads as Minecraft foliage.
+ * Shape: a 2x2 "log" trunk on a wider root flare, 3-5 log arms staircasing
+ * outward+upward from the upper trunk, and a ragged "leaves" blob centred above
+ * the trunk top with smaller clusters at each arm tip. The canopy edge is a
+ * jittered ellipsoid rather than a clean sphere, and ~12% of cells are punched
+ * out, so it reads as Minecraft foliage.
  */
 
 /** Eight compass directions for branch arms, in clockwise order. */
@@ -66,29 +66,25 @@ export function buildSakuraTree(
   oz: number,
   rng: () => number,
 ): void {
-  // --- Trunk: 5-6 blocks tall, base sitting on the grass at y=1. ---
-  const trunkH = 5 + Math.floor(rng() * 2);
+  // --- Trunk: 9-11 blocks tall, 2x2, base sitting on the grass at y=1. ---
+  const trunkH = 9 + Math.floor(rng() * 3);
   const topY = trunkH; // topmost log of the main stem
-  grid.box(ox, 1, oz, ox, topY, oz, "log");
+  grid.box(ox, 1, oz, ox + 1, topY, oz + 1, "log");
 
-  // Optional 2x2 flare on the bottom block or two, for a sturdier root.
-  if (rng() < 0.6) {
-    const fx = rng() < 0.5 ? -1 : 1;
-    const fz = rng() < 0.5 ? -1 : 1;
-    const flareH = 1 + Math.floor(rng() * 2); // 1-2 blocks of flare
-    grid.box(ox, 1, oz, ox + fx, flareH, oz + fz, "log");
-  }
+  // Root flare: a wider foot spreading into the grass.
+  const flareH = 1 + Math.floor(rng() * 2);
+  grid.box(ox - 1, 1, oz - 1, ox + 2, flareH, oz + 2, "log");
 
-  // --- Branches: 2-4 arms, spread apart by striding around the compass. ---
-  const armCount = 2 + Math.floor(rng() * 3);
+  // --- Branches: 3-5 arms, spread apart by striding around the compass. ---
+  const armCount = 3 + Math.floor(rng() * 3);
   const start = Math.floor(rng() * DIRS.length);
   const stride = rng() < 0.5 ? 2 : 3; // both keep the picked dirs distinct
 
   for (let i = 0; i < armCount; i++) {
     const [dx, dz] = DIRS[(start + i * stride) % DIRS.length];
-    const len = 2 + Math.floor(rng() * 2); // 2-3 blocks long
+    const len = 4 + Math.floor(rng() * 3); // 4-6 blocks long
     // Spring from the upper third of the trunk.
-    let by = topY - 1 - Math.floor(rng() * 2);
+    let by = topY - 2 - Math.floor(rng() * 3);
     let bx = ox;
     let bz = oz;
 
@@ -96,14 +92,14 @@ export function buildSakuraTree(
       // Diagonals alternate axes so the arm staircases and stays connected.
       if (dx !== 0 && (dz === 0 || k % 2 === 0)) bx += dx;
       else bz += dz;
-      by = Math.min(by + 1, topY + 1); // step up, but stay under the canopy top
+      by = Math.min(by + 1, topY + 2); // step up, but stay under the canopy top
       grid.set(bx, by, bz, "log");
     }
 
-    // Small puff of blossom at the arm tip.
-    leafBlob(grid, bx, by + 1, bz, 2, 1.6, rng);
+    // Puff of blossom at the arm tip.
+    leafBlob(grid, bx, by + 1, bz, 3.5, 2.6, rng);
   }
 
-  // --- Canopy: ~9 wide, 5 tall, centred one block above the trunk top. ---
-  leafBlob(grid, ox, topY + 1, oz, 4, 2.6, rng);
+  // --- Canopy: ~15 wide, 9 tall, centred above the trunk top. ---
+  leafBlob(grid, ox, topY + 2, oz, 7, 4.5, rng);
 }

@@ -85,3 +85,82 @@ components/three/
 ## 8. Success criteria
 
 Reads unmistakably as Minecraft voxel art in the hanami palette; visible corner AO and per-face brightness (not flat); canopy shadow on the grass; leaves sway subtly; ≤3 draw calls; identical framing/motion to today; phones render it; reduced-motion gets a static frame.
+
+---
+
+## Addendum — detail pass (2026-07-26, same day)
+
+The first voxel hero shipped at ~3.5k blocks and read as low-poly next to a real
+Minecraft Osaka Castle build. Three inputs drove this pass: Cortezerino's 51-step
+build tutorial, the **Bare Bones** resource pack, and a build-texturing guide.
+
+### Texture direction: Bare Bones, measured not guessed
+
+Sampling the actual pack (`sharp` → per-tile palette + layout grid) made its rules
+unambiguous, and they invert the assumption the first pass was built on:
+
+- **1-3 colours per tile.** Accent coverage 2% (dirt: 6px of 256) to 44% (cobble).
+- Accents are **structure** — mortar courses, ribs, borders, grain, concentric
+  rings — or a few **short horizontal dashes**. Never per-pixel noise.
+- Tintable blocks ship greyscale (`grass_block_top` = `#adadad`); `cherry_leaves`
+  is a **plus/cross flower motif** in 4 pinks, not a pink haze.
+- `white_concrete` is literally **one** colour.
+
+This is what buys the density: flat tiles have almost no high-frequency detail, so
+they stay readable at ~10 screen px per block where vanilla's busy 16px tiles
+would alias into mush. **The flat textures are the enabler, not a side quest.**
+
+### Texturing = painting light, not scattering blocks
+
+Per the texturing guide: scattered "similar" blocks average out to flat grey at any
+distance; what reads is light. Since this pipeline already bakes shading into vertex
+colours, that is implemented directly rather than faked:
+
+- `lib/voxel/light.ts` `paintLight()` — a **skylight** pass marching upward from
+  each block (occlusion falls off with distance), plus a **gravity** gradient.
+  This is what puts a dark band under all five flared eaves and under the island
+  rim, automatically, from geometry.
+- `clusterNoise()` — smooth 3D value noise so cobble/brick gather into **patches**.
+  Per-block randomness was the exact failure mode being avoided.
+- New per-block `shade` channel on `VoxelGrid`, multiplied into `FACE_SHADE`.
+
+### Castle geometry, from the tutorial
+
+The eave is the whole character of the building and repeats identically per tier:
+**overhang+1 courses stepping 2 blocks out : 1 down**, each course's inner edge
+meeting the outer edge of the one above (so the shell has no radial gaps and the
+1-block recess at the eave reads as a soffit), a **dark deck border** as the lowest
+widest course, and **one block flicked up at each corner** — the 反り upturn that
+makes a stepped eave read as curved. Gables (千鳥破風) alternate front/back → sides.
+
+Also from the guide: gold+black-wool bands under each eave, quartz cornices, dark
+timber sills and corner posts, 3-wide window bands inset 3 from each corner, and a
+gate mouth in the base. Note the real build has **no shachihoko** — its roof
+creatures are Osaka's 伏虎 tigers — so the gable-apex gold finial is used instead of
+inventing a fish.
+
+### Numbers
+
+| | before | after |
+|---|---|---|
+| blocks | 3,536 | 28,043 |
+| faces / tris | 3,022 / 6,044 | 24,434 / 48,868 |
+| draw calls | 2 | 2 |
+| build cost | — | ~84ms one-time |
+| `BLOCK` | 0.26 | 0.115 |
+| castle | 11 wide × 15 tall | 35 wide × 46 tall |
+| island rim | 11.5-13.5 | 27-30 |
+
+### Two bugs worth remembering
+
+1. **Lighting summed to ~1.67 irradiance**, blowing mid-grey stone out to near-white
+   and flattening the palette — the pale "funnel" spike. Because `FACE_SHADE` already
+   carries all directionality, total lighting must be nearly **flat at ~1.0**
+   (ambient 0.68 + hemisphere 0.22 for hue + sun 0.25 for the shadow map).
+2. **The camera sat below the island's grass plane**, so the top face went edge-on
+   and the island read as a flat tan plate. Fixed by sitting above it and tilting
+   down ~10°, aim point kept *below* the island so the tenshu holds the upper frame.
+
+Perf enabler: `VoxelGrid` moved from template-string keys to a packed 30-bit SMI
+integer key, and `island.ts` precomputes per-column `atan2`/`hypot` once instead of
+per layer. Without both, 28k blocks × 13 lookups per face would hitch the mount.

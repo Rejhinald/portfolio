@@ -103,7 +103,8 @@ function emitFace(
   const h = BLOCK * 0.5;
 
   const ao = cornerAO(grid, x, y, z, f);
-  const shade = FACE_SHADE[f];
+  // Painted light (light.ts) multiplies into vanilla's face brightness.
+  const shade = FACE_SHADE[f] * grid.getShade(x, y, z);
   const base = b.pos.length / 3;
 
   // Corner order matches cornerAO: (-u,-v), (+u,-v), (-u,+v), (+u,+v)
@@ -178,8 +179,7 @@ export function meshGrid(grid: VoxelGrid): MeshResult {
   const ct = newBuffers();
   let faceCount = 0;
 
-  for (const [k, id] of grid.entries()) {
-    const [x, y, z] = k.split(",").map(Number);
+  for (const [x, y, z, id] of grid.entries()) {
     const def = BLOCKS[id];
     const b = def.cutout ? ct : op;
 
