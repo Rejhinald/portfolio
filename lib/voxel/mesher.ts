@@ -43,6 +43,8 @@ type Buffers = {
   norm: number[];
   uv: number[];
   col: number[];
+  /** Night colour, blended toward by a uniform — see `nightColour`. */
+  night: number[];
   sway: number[];
   idx: number[];
 };
@@ -52,9 +54,47 @@ const newBuffers = (): Buffers => ({
   norm: [],
   uv: [],
   col: [],
+  night: [],
   sway: [],
   idx: [],
 });
+
+/**
+ * Night vertex colour for one face.
+ *
+ * Baking BOTH a day and a night colour, and cross-fading between them with a
+ * uniform, is what makes the theme toggle free: re-meshing to change lighting
+ * would cost ~140ms and stall the toggle.
+ *
+ * Night is not just "day, darker". Sky light goes cool and very low, while block
+ * light is warm, so an unlit wall reads blue-grey and a lantern-lit one reads
+ * amber. Emitters ignore shading entirely — a sea lantern's own faces stay at
+ * full brightness however occluded they are, which is what makes them read as
+ * the light source rather than as pale blocks.
+ */
+function nightColour(
+  ao: number,
+  faceShade: number,
+  painted: number,
+  light: number,
+  emission: number,
+): [number, number, number] {
+  if (emission > 0) return [1, 1, 1];
+
+  // Moonlight: cool, dim, and still shaped by AO so form survives.
+  const sky = 0.2 * ao * faceShade * painted;
+  const moon: [number, number, number] = [sky * 0.82, sky * 0.9, sky * 1.15];
+
+  // Block light: 0-15 raised to a curve so the falloff reads like lamplight
+  // rather than a linear ramp, then tinted amber.
+  const l = Math.pow(light / 15, 1.45);
+  const lit = l * 1.05 * faceShade;
+  return [
+    Math.min(1, moon[0] + lit * 1.0),
+    Math.min(1, moon[1] + lit * 0.74),
+    Math.min(1, moon[2] + lit * 0.42),
+  ];
+}
 
 /**
  * Project a block-local point onto a face's texture axes, giving fractions in
@@ -169,6 +209,14 @@ function emitBoxFace(
 
     const lum = AO_SHADE[ao[i]] * shade;
     b.col.push(lum, lum, lum);
+    const [nr, ng, nb] = nightColour(
+      AO_SHADE[ao[i]],
+      FACE_SHADE[f],
+      grid.getShade(x, y, z),
+      grid.getLight(x, y, z),
+      def.emission ?? 0,
+    );
+    b.night.push(nr, ng, nb);
     b.sway.push(swayTop && l[1] > 0.5 ? 1 : swayTop * 0.35);
   }
 
@@ -191,12 +239,16 @@ function emitBoxFace(
  */
 function emitPlant(
   b: Buffers,
+  grid: VoxelGrid,
   x: number,
   y: number,
   z: number,
   id: BlockId,
 ) {
   const def = BLOCKS[id];
+  // Ground cover picks up lantern light like anything else, so a lit courtyard
+  // has warm grass rather than a dark lawn under a bright lamp.
+  const nightPlant = nightColour(1, 1, 1, grid.getLight(x, y, z), 0);
   const [tx, ty] = def.faces[0];
   const [a0, c0, a1, c1] = tileUV(tx, ty);
 
@@ -235,6 +287,7 @@ function emitPlant(
       b.norm.push(0, 1, 0);
       b.uv.push(uvs[i][0], uvs[i][1]);
       b.col.push(PLANT_SHADE, PLANT_SHADE, PLANT_SHADE);
+      b.night.push(nightPlant[0], nightPlant[1], nightPlant[2]);
       b.sway.push(i >= 2 ? 1 : 0); // only the top edge leans
     }
     b.idx.push(base, base + 1, base + 3, base, base + 3, base + 2);
@@ -262,6 +315,7 @@ function emitPlant(
       b.norm.push(0, 1, 0);
       b.uv.push(uvs[i][0], uvs[i][1]);
       b.col.push(PLANT_SHADE, PLANT_SHADE, PLANT_SHADE);
+      b.night.push(nightPlant[0], nightPlant[1], nightPlant[2]);
       b.sway.push(0);
     }
     b.idx.push(base, base + 1, base + 3, base, base + 3, base + 2);
@@ -279,6 +333,7 @@ function toGeometry(b: Buffers): THREE.BufferGeometry {
   g.setAttribute("normal", new THREE.Float32BufferAttribute(b.norm, 3));
   g.setAttribute("uv", new THREE.Float32BufferAttribute(b.uv, 2));
   g.setAttribute("color", new THREE.Float32BufferAttribute(b.col, 3));
+  g.setAttribute("aNight", new THREE.Float32BufferAttribute(b.night, 3));
   g.setAttribute("aSway", new THREE.Float32BufferAttribute(b.sway, 1));
   g.setIndex(b.idx);
   g.computeBoundingSphere();
@@ -310,7 +365,7 @@ export function meshGrid(grid: VoxelGrid): MeshResult {
     const def = BLOCKS[id];
 
     if (def.plant) {
-      emitPlant(pl, x, y, z, id);
+      emitPlant(pl, grid, x, y, z, id);
       faceCount += def.flat ? 1 : 2;
       continue;
     }

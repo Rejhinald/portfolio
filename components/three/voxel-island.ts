@@ -5,7 +5,7 @@ import { loadAtlas } from "@/lib/voxel/atlas";
 import { VoxelGrid } from "@/lib/voxel/grid";
 import { meshGrid } from "@/lib/voxel/mesher";
 import { createVoxelMaterial } from "@/lib/voxel/material";
-import { paintLight } from "@/lib/voxel/light";
+import { paintLight, propagateBlockLight } from "@/lib/voxel/light";
 import { pruneOrphans } from "@/lib/voxel/prune";
 import { buildIsland } from "@/lib/voxel/models/island";
 import { buildCastle } from "@/lib/voxel/models/castle";
@@ -19,10 +19,14 @@ export type VoxelIslandOpts = {
   tier?: Tier;
   /** Shared time uniform driving foliage sway. */
   time: { value: number };
+  /** Shared 0..1 day->night blend, animated by the theme toggle. */
+  night?: { value: number };
 };
 
 export type VoxelIsland = {
   group: THREE.Group;
+  /** Live haze tint — retinted when the theme changes. */
+  hazeColor: THREE.Color;
   /** Diagnostics for verification (draw calls / triangle budget / build cost). */
   stats: {
     blocks: number;
@@ -30,6 +34,8 @@ export type VoxelIsland = {
     triangles: number;
     /** Ground-cover plants placed by the bonemeal pass. */
     plants: number;
+    /** Emissive blocks feeding the night-mode flood fill. */
+    lightSources: number;
     /** Wall-clock ms to author + light + mesh the grid, one time at mount. */
     buildMs: number;
   };
@@ -78,10 +84,17 @@ export function createVoxelIsland(opts: VoxelIslandOpts): VoxelIsland {
     minGravity: 0.62,
   });
 
+  // Night channel: flood-fill lantern light so the mesher can bake a second,
+  // warm lighting solution alongside the daylight one.
+  const lightSources = propagateBlockLight(grid);
+
   const { opaque, cutout, plants, faceCount } = meshGrid(grid);
   const buildMs = performance.now() - t0;
 
   const atlas = loadAtlas();
+  const nightBlend = opts.night ?? { value: 0 };
+  // Mutated by the diorama when the theme changes: the underside dissolves into
+  // whatever the page background currently is.
   const hazeColor = new THREE.Color(PALETTE.washi);
   // Local-space Y where the underside starts dissolving into the page.
   const shared = {
@@ -93,6 +106,7 @@ export function createVoxelIsland(opts: VoxelIslandOpts): VoxelIsland {
     hazeTop: -1.95,
     hazeBottom: -2.55,
     windAmp: animate ? 1 : 0,
+    night: nightBlend,
   };
 
   const group = new THREE.Group();
@@ -136,11 +150,13 @@ export function createVoxelIsland(opts: VoxelIslandOpts): VoxelIsland {
 
   return {
     group,
+    hazeColor,
     stats: {
       blocks: grid.size,
       faces: faceCount,
       triangles: faceCount * 2,
       plants: plantCount,
+      lightSources,
       buildMs,
     },
     dispose: () => {

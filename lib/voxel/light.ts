@@ -1,3 +1,4 @@
+import { BLOCKS } from "./blocks";
 import type { VoxelGrid } from "./grid";
 
 /**
@@ -56,6 +57,73 @@ export function paintLight(grid: VoxelGrid, opts: PaintOpts): void {
     grid.setShade(x, y, z, sky * gravity);
   }
 }
+
+/**
+ * Minecraft's block-light flood fill, for night mode.
+ *
+ * Vanilla keeps two independent light channels, sky and block, each 0-15. Block
+ * light spreads from an emitter by breadth-first search, losing exactly one level
+ * per step on the six axes (never diagonally), and stops at anything opaque. That
+ * is what makes a lantern under a wide eave pool light along the wall instead of
+ * lighting a sphere through it.
+ *
+ * Reproducing it rather than faking a radial falloff matters here: the tenshu's
+ * storeys are hollow boxes, so a correct fill spills out of the window openings
+ * and along the balconies, which is exactly the look — a building lit from
+ * inside rather than a few glowing dots.
+ */
+export function propagateBlockLight(grid: VoxelGrid): number {
+  // Bucket queue by level: BFS in strictly decreasing level order needs no sort.
+  const buckets: number[][] = Array.from({ length: 16 }, () => []);
+  let sources = 0;
+
+  for (const [x, y, z, id] of grid.entries()) {
+    const e = BLOCKS[id].emission ?? 0;
+    if (e > 0) {
+      grid.setLight(x, y, z, e);
+      buckets[e].push(x, y, z);
+      sources++;
+    }
+  }
+  if (sources === 0) return 0;
+
+  for (let level = 15; level >= 1; level--) {
+    const q = buckets[level];
+    for (let i = 0; i < q.length; i += 3) {
+      const x = q[i];
+      const y = q[i + 1];
+      const z = q[i + 2];
+      // A cell may have been raised by a brighter source after being queued.
+      if (grid.getLight(x, y, z) > level) continue;
+      const next = level - 1;
+      if (next < 1) continue;
+
+      for (const [dx, dy, dz] of AXES) {
+        const nx = x + dx;
+        const ny = y + dy;
+        const nz = z + dz;
+        // Opaque blocks are lit on their surface but do not pass light onward.
+        if (grid.isSolid(nx, ny, nz)) {
+          if (grid.getLight(nx, ny, nz) < next) grid.setLight(nx, ny, nz, next);
+          continue;
+        }
+        if (grid.getLight(nx, ny, nz) >= next) continue;
+        grid.setLight(nx, ny, nz, next);
+        buckets[next].push(nx, ny, nz);
+      }
+    }
+  }
+  return sources;
+}
+
+const AXES = [
+  [1, 0, 0],
+  [-1, 0, 0],
+  [0, 1, 0],
+  [0, -1, 0],
+  [0, 0, 1],
+  [0, 0, -1],
+] as const;
 
 /**
  * Smooth 3D value noise in [0,1], used to vary materials in CLUSTERS.

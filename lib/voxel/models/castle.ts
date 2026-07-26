@@ -83,11 +83,25 @@ function baseCourse(
   oz: number,
   y: number,
   half: number,
+  plinthTop: number,
 ): void {
   for (let x = ox - half; x <= ox + half; x++)
     for (let z = oz - half; z <= oz + half; z++) {
       const n = clusterNoise(x, y * 2, z, 0.22, 4021);
-      grid.set(x, y, z, n > 0.62 ? "cobble" : n < 0.34 ? "stone" : "stonebrick");
+      // Gravity: the courses darken toward the footing, so the plinth reads as
+      // load-bearing mass rather than a flat grey box.
+      const low = 1 - y / plinthTop;
+      const damp = clusterNoise(x, y, z, 0.16, 6607);
+      // Moss gathers low and on the shaded side, where water would sit.
+      if (low > 0.35 && damp > 0.72) {
+        grid.set(x, y, z, damp > 0.86 ? "moss" : "mossycobble");
+        continue;
+      }
+      if (low > 0.6 && n < 0.3) {
+        grid.set(x, y, z, "deepslatetiles");
+        continue;
+      }
+      grid.set(x, y, z, n > 0.62 ? "cobble" : n < 0.34 ? "smoothstone" : "stonebrick");
     }
 }
 
@@ -147,6 +161,36 @@ function goldWoolBand(
 }
 
 /**
+ * Roof tile for a position. Oxidised copper sits at almost the same brightness
+ * as prismarine but a clearly different green, so mixing them adds patina
+ * variation without breaking the roof's silhouette into light and dark patches —
+ * a hue buy rather than a value buy.
+ */
+function roofAt(x: number, y: number, z: number): BlockId {
+  const n = clusterNoise(x, y * 1.4, z, 0.15, 5309);
+  if (n > 0.74) return "copper";
+  if (n > 0.62) return "coppercut";
+  if (n < 0.24) return "roofplain";
+  return "roof";
+}
+
+/** Fill an annulus with the patina mix rather than one flat material. */
+function roofAnnulus(
+  grid: VoxelGrid,
+  ox: number,
+  oz: number,
+  y: number,
+  inner: number,
+  outer: number,
+): void {
+  for (let x = ox - outer; x <= ox + outer; x++)
+    for (let z = oz - outer; z <= oz + outer; z++) {
+      const r = Math.max(Math.abs(x - ox), Math.abs(z - oz));
+      if (r >= inner && r <= outer) grid.set(x, y, z, roofAt(x, y, z));
+    }
+}
+
+/**
  * One tiered roof. `wallTop` is the last wall row and `wallHalf` the wall's
  * half-width; the shell descends outward from a ridge plate to a dark eave
  * three blocks clear of the wall.
@@ -170,10 +214,10 @@ function tenshuRoof(
 
   // Ridge plate — solid, so the hollow tier is never seen into. Widened where
   // needed so the tier above actually has something to stand on.
-  annulus(grid, ox, oz, top, 0, Math.max(ridgeHalf, nextHalf), "roof");
+  roofAnnulus(grid, ox, oz, top, 0, Math.max(ridgeHalf, nextHalf));
   for (let i = 1; i < courses - 1; i++) {
     const inner = ridgeHalf + (i - 1) * 2 + 1;
-    annulus(grid, ox, oz, top - i, inner, inner + 1, "roof");
+    roofAnnulus(grid, ox, oz, top - i, inner, inner + 1);
   }
   // ── the eave, at half-block resolution ──
   // This edge is the whole character of the roof, and it is where the reference
@@ -207,6 +251,19 @@ function tenshuRoof(
   ] as const) {
     grid.set(ox + sx * eave, wallTop, oz + sz * eave, "roofdark");
     grid.set(ox + sx * eave, wallTop + 1, oz + sz * eave, "gold");
+  }
+
+  // Lanterns hung in the shadow under the overhang, spaced along each side.
+  // These are the scene's light sources at night: because block light spreads by
+  // flood fill, sitting them beneath the eave pools warm light along the wall
+  // and spills it through the window openings, lighting the storey from outside
+  // in — which is what makes the building glow rather than dotting it with lamps.
+  const under = eave - 1;
+  for (let t = -under + 2; t <= under - 2; t += 5) {
+    for (const s of [-1, 1] as const) {
+      grid.setIfEmpty(ox + t, wallTop - 1, oz + s * under, "lantern");
+      grid.setIfEmpty(ox + s * under, wallTop - 1, oz + t, "lantern");
+    }
   }
 }
 
@@ -256,7 +313,7 @@ export function buildCastle(
   const PLINTH_TOP = 9;
   for (let y = 1; y <= PLINTH_TOP; y++) {
     const half = 17 - Math.floor((y - 1) / 3);
-    baseCourse(grid, ox, oz, y, half);
+    baseCourse(grid, ox, oz, y, half, PLINTH_TOP);
     // A stair rim caps each batter step so the setbacks read as courses.
     if ((y - 1) % 3 === 2) {
       ringShaped(grid, ox, oz, y, half, "stonebrickstair", HALF.BOTTOM);
@@ -296,7 +353,17 @@ export function buildCastle(
     const nextHalf = TIERS[i + 1]?.half ?? 0;
 
     // Plaster walls — hollow, since interiors are never visible.
-    for (let y = y0; y <= y1; y++) annulus(grid, ox, oz, y, half, half, "plaster");
+    for (let y = y0; y <= y1; y++) {
+      // White supports only TWO readable tiers (snow through calcite all measure
+      // within a few percent), so the second one has to be a hue break: warm
+      // terracotta against cold plaster, clustered so it reads as weathering.
+      for (let x = ox - half; x <= ox + half; x++)
+        for (let z = oz - half; z <= oz + half; z++) {
+          if (Math.max(Math.abs(x - ox), Math.abs(z - oz)) !== half) continue;
+          const w = clusterNoise(x, y * 1.3, z, 0.14, 9133);
+          grid.set(x, y, z, w > 0.7 ? "whiteclay" : "plaster");
+        }
+    }
 
     // Dark timber sill at the foot of the wall; quartz cornice capping it, with
     // the gold/wool band just beneath. Windows go in the rows between, leaving

@@ -34,6 +34,52 @@
   --text-page-title: clamp(2.5rem, 5vw, 4.5rem);
   --text-section-title: clamp(2rem, 4vw, 3.5rem);
   --text-card-title: clamp(1.4rem, 2.5vw, 2rem);
+  /* Grain blend: multiply darkens paper. Overridden at night — see below. */
+  --wa-grain-blend: multiply;
+  --wa-grain-fine: 0.05;
+  --wa-grain-coarse: 0.03;
+}
+
+/*
+ * 夜桜 yozakura — night cherry-blossom viewing, lit by lanterns.
+ *
+ * Every component styles itself through the semantic --wa-* tokens, so the whole
+ * site flips by redefining them here. Only ONE selector drives this: an inline
+ * script in the document head resolves the stored choice (or the OS preference)
+ * and stamps data-theme before first paint, which avoids both a flash and a CSS
+ * specificity fight between a media query and an explicit user choice.
+ */
+[data-theme="dark"] {
+  /* Sumi-dark surfaces, warmed very slightly so they read as ink not as black */
+  --wa-paper: #14181e;
+  --wa-paper-2: #1b2028;
+  --wa-paper-3: #0f1319;
+  /* Washi-light text */
+  --wa-ink: #ece5d9;
+  --wa-ink-2: #d3ccc0;
+  --wa-ink-mid: #98a2ac;
+  --wa-stone: #6d7a80;
+  /* Vermillion has to lift to stay legible against a dark ground */
+  --wa-shu: #e85539;
+  --wa-shu-deep: #c03e26;
+  /* Lantern gold — brighter at night, it is the accent that carries the theme */
+  --wa-gold: #dcbb6e;
+  --wa-gold-deep: #a8853f;
+  /* Blossom stays luminous against the dark */
+  --wa-sakura: #eaa6ba;
+  --wa-sakura-2: #f6d3dc;
+  --wa-sakura-deep: #c9819a;
+  /* Night sky */
+  --wa-sora: #2e4a6b;
+  --wa-sora-deep: #16283c;
+  --wa-wakaba: #7d9660;
+  --wa-wakaba-deep: #47603c;
+  --wa-rule: #2b323b;
+  --wa-rule-dark: #0b0e12;
+  /* Multiply is invisible on a dark ground; screen makes the tooth read again. */
+  --wa-grain-blend: screen;
+  --wa-grain-fine: 0.035;
+  --wa-grain-coarse: 0.022;
 }
 
 @theme inline {
@@ -75,14 +121,14 @@
     inset: 0;
     z-index: 60;
     pointer-events: none;
-    mix-blend-mode: multiply;
+    mix-blend-mode: var(--wa-grain-blend);
   }
   body::before {
-    opacity: 0.05;
+    opacity: var(--wa-grain-fine);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
   body::after {
-    opacity: 0.03;
+    opacity: var(--wa-grain-coarse);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='700'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23m)'/%3E%3C/svg%3E");
   }
   /* Themed keyboard focus + footer selection */

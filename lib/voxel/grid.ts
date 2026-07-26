@@ -23,6 +23,8 @@ export class VoxelGrid {
   private cells = new Map<number, BlockId>();
   /** Per-block brightness multiplier, 1 = unpainted. See `light.ts`. */
   private shades = new Map<number, number>();
+  /** Per-block emitted-light level 0-15, for night mode. See `light.ts`. */
+  private lights = new Map<number, number>();
 
   /** Orientation for slabs/stairs. Absent = 0 = facing +X, bottom half. */
   private states = new Map<number, number>();
@@ -61,6 +63,15 @@ export class VoxelGrid {
 
   getShade(x: number, y: number, z: number): number {
     return this.shades.get(key(x | 0, y | 0, z | 0)) ?? 1;
+  }
+
+  /** Block-light level 0-15, from the night-mode flood fill. */
+  setLight(x: number, y: number, z: number, level: number): void {
+    this.lights.set(key(x | 0, y | 0, z | 0), level);
+  }
+
+  getLight(x: number, y: number, z: number): number {
+    return this.lights.get(key(x | 0, y | 0, z | 0)) ?? 0;
   }
 
   get(x: number, y: number, z: number): BlockId | undefined {

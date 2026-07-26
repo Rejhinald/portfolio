@@ -5,6 +5,7 @@ import { motion, useMotionValueEvent, useScroll } from "motion/react";
 import { Menu, X } from "lucide-react";
 import { profile } from "@/lib/data/profile";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "./theme-toggle";
 
 export function Nav() {
   const [hidden, setHidden] = useState(false);
@@ -82,6 +83,7 @@ export function Nav() {
         </ul>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <a
             href="#contact"
             className="hidden rounded-full bg-shu px-4 py-2 text-sm text-paper transition-colors hover:bg-shu-deep sm:inline-block"

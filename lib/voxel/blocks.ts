@@ -26,6 +26,10 @@ export type BlockId =
   | "coarsedirt"
   | "rooteddirt"
   | "moss"
+  | "mud"
+  | "podzol"
+  | "mudbrick"
+  | "brownclay"
   // rock, light -> dark
   | "calcite"
   | "diorite"
@@ -37,8 +41,11 @@ export type BlockId =
   | "mossycobble"
   | "dripstone"
   | "tuff"
+  | "smoothstone"
   | "deepslate"
   | "cobbleddeepslate"
+  | "deepslatetiles"
+  | "blackstone"
   // ores
   | "coalore"
   | "ironore"
@@ -49,6 +56,9 @@ export type BlockId =
   | "leaves"
   | "plank"
   | "beam"
+  | "mangrove"
+  | "darkbeam"
+  | "darkwood"
   // plants (cross-quad)
   | "shortgrass"
   | "tallgrass"
@@ -57,14 +67,19 @@ export type BlockId =
   | "dandelion"
   | "petals"
   | "roots"
+  | "vine"
   // castle
   | "plaster"
   | "quartz"
   | "quartzchiseled"
   | "quartzpillar"
+  | "whiteclay"
   | "roof"
   | "roofplain"
   | "roofdark"
+  | "copper"
+  | "coppercut"
+  | "greenclay"
   | "ridge"
   | "wool"
   | "window"
@@ -106,6 +121,13 @@ export type BlockDef = {
    * orientation in the grid's parallel state map — see `shapes.ts`.
    */
   shape?: Shape;
+  /**
+   * Light emitted, on Minecraft's 0-15 scale. Drives the block-light flood fill
+   * that makes the castle glow at night. Vanilla values: sea lantern and
+   * glowstone 15, lantern 15, jack o'lantern 15, shroomlight 15, torch 14,
+   * campfire 15, redstone lamp 15, end rod 14.
+   */
+  emission?: number;
 };
 
 const all = (t: readonly [number, number]): [number, number][] =>
@@ -153,6 +175,10 @@ export const BLOCKS: Record<BlockId, BlockDef> = {
   coarsedirt: { faces: all(TILE.coarseDirt) },
   rooteddirt: { faces: all(TILE.rootedDirt) },
   moss: { faces: all(TILE.moss) },
+  mud: { faces: all(TILE.mud) },
+  podzol: { faces: topBottomSide(TILE.podzolTop, TILE.dirt, TILE.rootedDirt) },
+  mudbrick: { faces: all(TILE.mudBricks) },
+  brownclay: { faces: all(TILE.brownTerracotta) },
 
   calcite: { faces: all(TILE.calcite) },
   diorite: { faces: all(TILE.diorite) },
@@ -165,7 +191,10 @@ export const BLOCKS: Record<BlockId, BlockDef> = {
   dripstone: { faces: all(TILE.dripstone) },
   tuff: { faces: all(TILE.tuff) },
   deepslate: { faces: column(TILE.tuff, TILE.deepslate) },
+  smoothstone: { faces: all(TILE.smoothStone) },
   cobbleddeepslate: { faces: all(TILE.cobbledDeepslate) },
+  deepslatetiles: { faces: all(TILE.deepslateTiles) },
+  blackstone: { faces: all(TILE.blackstone) },
 
   coalore: { faces: all(TILE.coalOre) },
   ironore: { faces: all(TILE.ironOre) },
@@ -181,6 +210,9 @@ export const BLOCKS: Record<BlockId, BlockDef> = {
   },
   plank: { faces: all(TILE.plank) },
   beam: { faces: column(TILE.logEnd, TILE.beam) },
+  mangrove: { faces: column(TILE.logEnd, TILE.mangroveLog) },
+  darkbeam: { faces: column(TILE.logEnd, TILE.strippedDarkOak) },
+  darkwood: { faces: column(TILE.logEnd, TILE.darkOakLog) },
 
   shortgrass: plant(TILE.shortGrass),
   tallgrass: plant(TILE.tallGrassBottom),
@@ -189,22 +221,35 @@ export const BLOCKS: Record<BlockId, BlockDef> = {
   dandelion: plant(TILE.dandelion),
   petals: plant(TILE.pinkPetals, { flat: true }),
   roots: plant(TILE.hangingRoots, { foliage: false }),
+  vine: plant(TILE.vine, { foliage: true }),
 
   plaster: { faces: all(TILE.plaster) },
   quartz: { faces: all(TILE.quartz) },
   quartzchiseled: { faces: all(TILE.quartzChiseled) },
   quartzpillar: { faces: column(TILE.quartz, TILE.quartzPillar) },
+  whiteclay: { faces: all(TILE.whiteTerracotta) },
   roof: { faces: all(TILE.roof) },
+  copper: { faces: all(TILE.copper) },
+  coppercut: { faces: all(TILE.copperCut) },
+  greenclay: { faces: all(TILE.greenTerracotta) },
   roofplain: { faces: all(TILE.roofPlain) },
   roofdark: { faces: all(TILE.roofDark) },
   ridge: { faces: all(TILE.ridge) },
   wool: { faces: all(TILE.wool) },
   // Iron bars: an alpha-cutout grille, so it must not occlude its neighbours.
-  window: { faces: all(TILE.window), cutout: true, transparent: true },
+  // Emissive at night only — `emission` feeds the night bake and the block-light
+  // flood fill, and is ignored by the daylight one, so this lights the storeys
+  // from within after dark while leaving the day render untouched.
+  window: {
+    faces: all(TILE.window),
+    cutout: true,
+    transparent: true,
+    emission: 11,
+  },
   gold: { faces: all(TILE.gold) },
   shu: { faces: all(TILE.shu) },
-  lantern: { faces: all(TILE.lanternLit) },
-  glow: { faces: all(TILE.glow) },
+  lantern: { faces: all(TILE.lanternLit), emission: 15 },
+  glow: { faces: all(TILE.glow), emission: 15 },
 
   // Half-block roof geometry. `prismarine_brick_slab` is the most-used material
   // in the reference build, and these are what turn a stepped eave into one that

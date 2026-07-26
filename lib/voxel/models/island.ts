@@ -49,15 +49,36 @@ function rockAt(x: number, y: number, z: number, t: number): BlockId {
   const band = clusterNoise(x * 0.35, y * 2.2, z * 0.35, 0.3, 4477);
   const depth = t + (band - 0.5) * 0.28;
 
+  // Five VALUE tiers, each populated by 2-3 blocks that differ in texture rather
+  // than in brightness. Measuring the old ramp showed the opposite mistake:
+  // twelve blocks crammed into a few percent of each other, delivering four
+  // readable tiers and leaving the big steps unfilled. Value buys tiers;
+  // texture buys interest — and only value survives being shrunk on screen.
   if (depth < 0.1) return band > 0.62 ? "calcite" : "diorite";
-  if (depth < 0.28) return band > 0.55 ? "andesite" : "stone";
-  if (depth < 0.55) {
+  if (depth < 0.26) return band > 0.55 ? "smoothstone" : "andesite";
+  if (depth < 0.5) {
     if (band > 0.68) return "cobble";
     if (band < 0.3) return "gravel";
     return "stone";
   }
-  if (depth < 0.78) return band > 0.55 ? "tuff" : "cobbleddeepslate";
-  return band > 0.5 ? "deepslate" : "cobbleddeepslate";
+  if (depth < 0.7) return band > 0.55 ? "tuff" : "deepslatetiles";
+  if (depth < 0.87) return band > 0.5 ? "deepslate" : "cobbleddeepslate";
+  return band > 0.6 ? "cobbleddeepslate" : "blackstone";
+}
+
+/**
+ * Soil, as a real value ramp. The three vanilla dirts measure 110/102/91 with
+ * 22-28% internal noise, so mixing only those reads as ONE flat tone however it
+ * is shuffled. The flat terracotta at the bottom is what makes the gradient
+ * visible: its step is bigger than the dirts' own speckle.
+ */
+function soilAt(x: number, y: number, z: number, depth: number): BlockId {
+  const n = clusterNoise(x, y * 1.6, z, 0.13, 2207);
+  const d = depth + (n - 0.5) * 0.3;
+  if (d < 0.3) return n > 0.7 ? "coarsedirt" : "dirt";
+  if (d < 0.58) return n > 0.6 ? "rooteddirt" : "podzol";
+  if (d < 0.8) return n > 0.55 ? "mud" : "mudbrick";
+  return "brownclay";
 }
 
 /**
@@ -121,10 +142,10 @@ export function buildIsland(grid: VoxelGrid, rng: () => number): void {
   // Grass cap, then soil layers stepping in so the topsoil visibly tapers
   // before the rock takes over.
   slab(0, (rim) => rim, () => "grass");
-  slab(-1, (rim) => rim - 1.5, () => "dirt");
-  slab(-2, (rim) => rim - 3, () => "dirt");
-  slab(-3, (rim) => rim - 5, () => "dirt");
-  slab(-4, (rim) => rim - 7.5, () => "dirt");
+  slab(-1, (rim) => rim - 1.5, (x, z) => soilAt(x, -1, z, 0.1));
+  slab(-2, (rim) => rim - 3, (x, z) => soilAt(x, -2, z, 0.36));
+  slab(-3, (rim) => rim - 5, (x, z) => soilAt(x, -3, z, 0.62));
+  slab(-4, (rim) => rim - 7.5, (x, z) => soilAt(x, -4, z, 0.85));
 
   // --- stone body ----------------------------------------------------------
   // Radius follows a convex curve rather than a straight line, so the rock

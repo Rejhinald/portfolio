@@ -8,6 +8,7 @@ import { TokonomaFrame } from "@/components/layout/tokonoma-frame";
 import { Footer } from "@/components/layout/footer";
 import { Preloader } from "@/components/layout/preloader";
 import { Cursor } from "@/components/layout/cursor";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 const shippori = Shippori_Mincho({
   subsets: ["latin"],
@@ -56,9 +57,17 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${shippori.variable} ${zen.variable}`}>
+    // suppressHydrationWarning: the inline script below stamps data-theme on this
+    // element before React hydrates, so the server and client markup differ here
+    // by design.
+    <html
+      lang="en"
+      className={`${shippori.variable} ${zen.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body>
         <Preloader />

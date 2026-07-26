@@ -4,10 +4,11 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { StagedScene, type SceneContext, type SceneFrame } from "./staged-scene";
 import { selectTier } from "@/lib/three/quality";
-import { PALETTE } from "@/lib/three/palette";
+import { NIGHT, PALETTE } from "@/lib/three/palette";
 import { createVoxelIsland } from "./voxel-island";
 import { createPetalField } from "@/lib/three/diorama-petals";
 import { createMist } from "@/lib/three/mist";
+import { currentTheme, onThemeChange } from "@/lib/theme";
 
 function envTier() {
   const nav = navigator as Navigator & { deviceMemory?: number };
@@ -61,7 +62,8 @@ export function HanamiDiorama({ className }: { className?: string }) {
       (ctx: SceneContext): SceneFrame => {
         const { scene, camera, renderer, width, height } = ctx;
         const wide = width / height > 1.15;
-        scene.fog = new THREE.Fog(PALETTE.sora, 11, 26);
+        const fog = new THREE.Fog(PALETTE.sora, 11, 26);
+        scene.fog = fog;
 
         // Lighting is deliberately almost FLAT, summing to ~1.0 irradiance.
         // All the directionality already lives in the vertex colours (vanilla's
@@ -69,8 +71,10 @@ export function HanamiDiorama({ className }: { className?: string }) {
         // just double-counts — at 1.67 it blew mid-grey stone out to near-white
         // and flattened the whole palette. The hemisphere contributes hue rather
         // than brightness, and the sun exists mainly to cast the static shadow.
-        scene.add(new THREE.AmbientLight(0xffffff, 0.68));
-        scene.add(new THREE.HemisphereLight(PALETTE.sora, PALETTE.wakaba, 0.22));
+        const ambient = new THREE.AmbientLight(0xffffff, 0.68);
+        scene.add(ambient);
+        const hemi = new THREE.HemisphereLight(PALETTE.sora, PALETTE.wakaba, 0.22);
+        scene.add(hemi);
         // Sun sits high, left and IN FRONT (+Z is toward the camera) so it lights
         // the tenshu's visible face rather than silhouetting it.
         const sun = new THREE.DirectionalLight(0xfff4e0, 0.25);
@@ -79,7 +83,9 @@ export function HanamiDiorama({ className }: { className?: string }) {
         scene.add(sun);
 
         const time = { value: 0 };
-        const island = createVoxelIsland({ tier: tier.tier, time });
+        // Shared 0..1 blend driving the baked day->night cross-fade.
+        const night = { value: 0 };
+        const island = createVoxelIsland({ tier: tier.tier, time, night });
         const voxels = island.group;
 
         // Static shadow map: the sun never moves and the geometry never changes,
@@ -152,22 +158,66 @@ export function HanamiDiorama({ className }: { className?: string }) {
         camera.position.copy(baseCam);
         camera.lookAt(target);
 
+        /**
+         * Apply a theme to the scene. Only uniforms and light intensities change —
+         * the geometry carries both lighting solutions, so this never re-meshes.
+         */
+        const applyTheme = (dark: boolean) => {
+          nightTarget = dark ? 1 : 0;
+          // Sky, fog and haze all move together, so the island's hazed underside
+          // keeps dissolving into the page background rather than into a seam.
+          scene.background = null;
+          fog.color.setHex(dark ? NIGHT.skyDeep : PALETTE.sora);
+          island.hazeColor.setHex(dark ? NIGHT.page : PALETTE.washi);
+          // Total irradiance stays ~1.0 in BOTH themes. The darkness of night
+          // lives entirely in the baked vertex colours (unlit ~0.2, lantern-lit
+          // up to 1.0, emitters pinned at 1.0). Dimming the scene lights as well
+          // double-dims, and crushes the lanterns along with everything else —
+          // the building went dark instead of glowing.
+          ambient.intensity = dark ? 0.86 : 0.68;
+          hemi.color.setHex(dark ? NIGHT.moon : PALETTE.sora);
+          hemi.groundColor.setHex(dark ? NIGHT.skyDeep : PALETTE.wakaba);
+          hemi.intensity = dark ? 0.14 : 0.22;
+          // The sun must go nearly out at night, or its N·L term relights the
+          // side facing it and undoes the baked lamplight.
+          sun.color.setHex(dark ? NIGHT.moon : 0xfff4e0);
+          sun.intensity = dark ? 0.04 : 0.25;
+          if (shadows) renderer.shadowMap.needsUpdate = true;
+        };
+
+        let nightTarget = 0;
+        applyTheme(currentTheme() === "dark");
+        // Jump straight to the target on first paint: a cross-fade from day is
+        // only wanted when the user actually toggles.
+        night.value = nightTarget;
+        const unsubscribe = onThemeChange((t) => {
+          applyTheme(t === "dark");
+          // A static-tier scene has no loop to animate the fade, so step it here.
+          if (!tier.animate) {
+            night.value = nightTarget;
+            ctx.requestRender?.();
+          }
+        });
+
         if (process.env.NODE_ENV !== "production") {
           // Budget check: expect ~1-3 draw calls and ~20-40k triangles.
           console.info(
             `[voxel] ${island.stats.blocks} blocks -> ${island.stats.faces} faces ` +
-              `(${island.stats.triangles} tris, ${island.stats.plants} plants) ` +
+              `(${island.stats.triangles} tris, ${island.stats.plants} plants, ` +
+              `${island.stats.lightSources} lights) ` +
               `in ${island.stats.buildMs.toFixed(0)}ms`,
           );
         }
 
         if (!tier.animate) {
           holder.rotation.y = -0.25;
-          return { render: "once" };
+          return { render: "once", dispose: unsubscribe };
         }
 
-        return (t: number) => {
+        const frame = (t: number) => {
           time.value = t;
+          // Ease toward the target so toggling reads as dusk falling, not a cut.
+          night.value += (nightTarget - night.value) * 0.08;
           holder.rotation.y = Math.sin(t * 0.12) * 0.45 - 0.1;
           holder.position.y = BASE_Y + Math.sin(t * 0.6) * 0.08;
           petals?.update(t);
@@ -178,6 +228,10 @@ export function HanamiDiorama({ className }: { className?: string }) {
           camera.position.y += (baseCam.y - py * 0.5 - camera.position.y) * 0.05;
           camera.lookAt(target);
         };
+        // Hand the theme subscription to StagedScene so it is torn down with the
+        // canvas rather than outliving it.
+        frame.dispose = unsubscribe;
+        return frame;
       },
     [tier],
   );

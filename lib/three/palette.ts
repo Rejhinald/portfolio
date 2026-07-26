@@ -21,3 +21,19 @@ export const PALETTE = {
 } as const;
 
 export type Palette = typeof PALETTE;
+
+/**
+ * 夜桜 night palette for the diorama, matching the CSS `[data-theme="dark"]`
+ * tokens so the scene and the page dissolve into each other at the same colour.
+ */
+export const NIGHT = {
+  /** Sky / fog. */
+  sky: 0x21374f,
+  skyDeep: 0x121d2b,
+  /** The page background the island's underside fades into. */
+  page: 0x14181e,
+  /** Warm lamplight, used for the block-light tint and the sun stand-in. */
+  lamp: 0xffc978,
+  /** Cool moonlight fill. */
+  moon: 0x8fa8c8,
+} as const;

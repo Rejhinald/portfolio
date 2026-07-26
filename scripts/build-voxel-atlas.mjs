@@ -83,20 +83,31 @@ const TILES = [
   { key: "coarseDirt", src: "coarse_dirt" },
   { key: "rootedDirt", src: "rooted_dirt" },
   { key: "moss", src: "moss_block" },
+  // Brown's real value tiers. The three dirts above measure 110/102/91 with
+  // 22-28% internal noise, so they are ONE tier, not three — the ramp was
+  // quieter than the blocks' own speckle. These extend brown's range from
+  // 1.21x to ~2.0x, and the terracotta is flat (2.6% noise) so its step survives.
+  { key: "mud", src: "mud" },
+  { key: "podzolTop", src: "podzol_top" },
+  { key: "mudBricks", src: "mud_bricks" },
+  { key: "brownTerracotta", src: "brown_terracotta" },
 
-  // ── rock, ordered light -> dark so the value ramp is legible here ──
+  // ── rock, in true measured luminance order (light -> dark) ──
   { key: "calcite", src: "calcite" },
   { key: "diorite", src: "diorite" },
+  { key: "smoothStone", src: "smooth_stone" },
   { key: "andesite", src: "andesite" },
-  { key: "stone", src: "stone" },
-  { key: "cobble", src: "cobblestone" },
   { key: "gravel", src: "gravel" },
+  { key: "cobble", src: "cobblestone" },
+  { key: "stone", src: "stone" },
   { key: "stonebrick", src: "stone_bricks" },
   { key: "mossyCobble", src: "mossy_cobblestone" },
   { key: "dripstone", src: "dripstone_block" },
   { key: "tuff", src: "tuff" },
   { key: "deepslate", src: "deepslate" },
   { key: "cobbledDeepslate", src: "cobbled_deepslate" },
+  { key: "deepslateTiles", src: "deepslate_tiles" },
+  { key: "blackstone", src: "blackstone" },
 
   // ── ores (sparse high-contrast accents) ──
   { key: "coalOre", src: "coal_ore" },
@@ -109,6 +120,11 @@ const TILES = [
   { key: "logEnd", src: "cherry_log_top" },
   { key: "plank", src: "spruce_planks" },
   { key: "beam", src: "stripped_spruce_log" },
+  // Wood had a hole between 93 and 38 with nothing in it, so the timber never
+  // read as a system. These are its middle rungs.
+  { key: "mangroveLog", src: "mangrove_log" },
+  { key: "strippedDarkOak", src: "stripped_dark_oak_log" },
+  { key: "darkOakLog", src: "dark_oak_log" },
 
   // ── foliage ──
   { key: "leaves", src: "cherry_leaves" },
@@ -126,9 +142,16 @@ const TILES = [
   { key: "quartz", src: "quartz_block_bottom" }, // smooth quartz
   { key: "quartzChiseled", src: "chiseled_quartz_block" },
   { key: "quartzPillar", src: "quartz_pillar" },
+  { key: "whiteTerracotta", src: "white_terracotta" },
   { key: "roof", src: "prismarine_bricks" },
   { key: "roofDark", src: "dark_prismarine" },
   { key: "roofPlain", src: "prismarine", frame0: true },
+  // Copper gives the roof its actual identity: #52a385 against prismarine's
+  // #63ac9e is a clear hue break at nearly the same value.
+  { key: "copper", src: "oxidized_copper" },
+  { key: "copperCut", src: "oxidized_cut_copper" },
+  { key: "greenTerracotta", src: "green_terracotta" },
+  { key: "vine", src: "vine", tint: TINT.foliage },
   { key: "ridge", src: "nether_bricks" },
   { key: "wool", src: "black_wool" },
   { key: "gold", src: "gold_block" },

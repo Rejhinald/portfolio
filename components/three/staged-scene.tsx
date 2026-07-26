@@ -9,6 +9,12 @@ export type SceneContext = {
   renderer: THREE.WebGLRenderer;
   width: number;
   height: number;
+  /**
+   * Ask for one more frame. Only meaningful for a static scene, which has no
+   * loop: without it, a scene that changes in response to something external
+   * (the theme toggle) would keep showing its first frame forever.
+   */
+  requestRender: () => void;
 };
 
 /**
@@ -16,7 +22,13 @@ export type SceneContext = {
  *  - a function → animated: called every rAF (IntersectionObserver-gated)
  *  - { render: "once" } or void → static: rendered a single frame, no loop
  */
-export type SceneFrame = ((elapsed: number) => void) | { render: "once" } | void;
+/** Optional teardown for anything the scene subscribed to (e.g. theme changes). */
+export type SceneDisposable = { dispose?: () => void };
+
+export type SceneFrame =
+  | (((elapsed: number) => void) & SceneDisposable)
+  | ({ render: "once" } & SceneDisposable)
+  | void;
 
 type StagedSceneProps = {
   className?: string;
@@ -68,9 +80,18 @@ export function StagedScene({ className, dpr = 2, init }: StagedSceneProps) {
     renderer.domElement.style.display = "block";
     wrap.appendChild(renderer.domElement);
 
-    const frame = initRef.current({ scene, camera, renderer, width, height });
-    const animated = typeof frame === "function";
+    // Declared before init so the scene can capture it, but only usable once the
+    // renderer exists — which it does by this point.
     const renderOnce = () => renderer.render(scene, camera);
+    const frame = initRef.current({
+      scene,
+      camera,
+      renderer,
+      width,
+      height,
+      requestRender: renderOnce,
+    });
+    const animated = typeof frame === "function";
 
     const start = performance.now();
     let raf = 0;
@@ -110,6 +131,9 @@ export function StagedScene({ className, dpr = 2, init }: StagedSceneProps) {
 
     return () => {
       cancelAnimationFrame(raf);
+      // Both variants may carry a dispose; the animated one is a function with
+      // the property attached, so this must not narrow on typeof.
+      if (frame) frame.dispose?.();
       io.disconnect();
       ro.disconnect();
       scene.traverse((obj) => {

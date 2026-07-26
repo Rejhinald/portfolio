@@ -18,6 +18,12 @@ export type VoxelMaterialOpts = {
    * One double-sided quad per plane beats emitting both winding orders.
    */
   doubleSide?: boolean;
+  /**
+   * Shared 0..1 day->night blend. The mesher bakes both lighting solutions as
+   * separate vertex attributes, so animating this cross-fades between them
+   * without touching geometry.
+   */
+  night?: { value: number };
 };
 
 /**
@@ -51,6 +57,7 @@ export function createVoxelMaterial(
     uHazeColor: { value: opts.hazeColor },
     uHazeTop: { value: opts.hazeTop },
     uHazeBottom: { value: opts.hazeBottom },
+    uNight: opts.night ?? { value: 0 },
   };
 
   mat.onBeforeCompile = (shader) => {
@@ -62,9 +69,24 @@ export function createVoxelMaterial(
         /* glsl */ `
         #include <common>
         attribute float aSway;
+        attribute vec3 aNight;
         uniform float uTime;
         uniform float uWindAmp;
+        uniform float uNight;
         varying float vLocalY;
+      `,
+      )
+      // Cross-fade the two baked lighting solutions. `<color_vertex>` has just
+      // written the day colour into vColor, so blending here costs one mix and
+      // means switching theme never re-meshes.
+      .replace(
+        "#include <color_vertex>",
+        /* glsl */ `
+        #include <color_vertex>
+        // NOTE: vColor is a vec4 in current three.js (vec3 in older ones), so the
+        // .rgb swizzle is required — mix(vec4, vec3, float) does not compile, and
+        // .rgb is valid on both shapes.
+        vColor.rgb = mix(vColor.rgb, aNight, uNight);
       `,
       )
       // Displace right after begin_vertex so the offset propagates into

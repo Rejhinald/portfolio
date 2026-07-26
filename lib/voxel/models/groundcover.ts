@@ -74,5 +74,31 @@ export function buildGroundCover(
       placed++;
     }
   }
+
+  // Overgrowth: vines spilling over the island's rim, where a real overgrown
+  // build would let them hang. Kept to the outer edge and to a minority of
+  // columns — the ask was "overgrown-ish, but not that much", and vines
+  // everywhere would read as a green fringe rather than as age.
+  for (let x = -bound; x <= bound; x++) {
+    for (let z = -bound; z <= bound; z++) {
+      if (grid.get(x, 0, z) !== "grass") continue;
+      // Only rim columns: something must be missing beside them to hang from.
+      const exposed =
+        !grid.has(x + 1, 0, z) ||
+        !grid.has(x - 1, 0, z) ||
+        !grid.has(x, 0, z + 1) ||
+        !grid.has(x, 0, z - 1);
+      if (!exposed) continue;
+      if (clusterNoise(x, 9, z, 0.19, 3391) < 0.62) continue;
+      if (rng() > 0.5) continue;
+      const len = 1 + Math.floor(rng() * 3);
+      for (let k = 1; k <= len; k++) {
+        if (grid.has(x, -k, z)) break;
+        grid.set(x, -k, z, "vine");
+        placed++;
+      }
+    }
+  }
+
   return placed;
 }
