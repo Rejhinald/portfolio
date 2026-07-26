@@ -5,10 +5,7 @@ import * as THREE from "three";
 import { StagedScene, type SceneContext, type SceneFrame } from "./staged-scene";
 import { selectTier } from "@/lib/three/quality";
 import { PALETTE } from "@/lib/three/palette";
-import { createIslandModel } from "@/lib/three/create-island";
-import { createCastleModel } from "@/lib/three/create-castle";
-import { createSakuraTreeModel } from "@/lib/three/create-sakura-tree";
-import { createToriiModel, createLanternModel } from "@/lib/three/create-set-dressing";
+import { createVoxelIsland } from "./voxel-island";
 import { createPetalField } from "@/lib/three/diorama-petals";
 import { createMist } from "@/lib/three/mist";
 
@@ -62,58 +59,69 @@ export function HanamiDiorama({ className }: { className?: string }) {
   const init = useMemo(
     () =>
       (ctx: SceneContext): SceneFrame => {
-        const { scene, camera, width, height } = ctx;
+        const { scene, camera, renderer, width, height } = ctx;
         const wide = width / height > 1.15;
         scene.fog = new THREE.Fog(PALETTE.sora, 11, 26);
 
-        scene.add(new THREE.HemisphereLight(PALETTE.sora, PALETTE.wakaba, 1.0));
-        const key = new THREE.DirectionalLight(0xfff2e0, 1.15);
-        key.position.set(5, 8, 4);
-        scene.add(key);
-        const rim = new THREE.DirectionalLight(0xbfd8ec, 0.42);
-        rim.position.set(-5, 3, -6);
-        scene.add(rim);
-        scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+        // Ambient-dominant lighting: vertex colours already carry Minecraft's
+        // faceShade * AO, so the directional light is weak and exists mainly to
+        // cast the (static) shadow map.
+        scene.add(new THREE.HemisphereLight(PALETTE.sora, PALETTE.wakaba, 1.35));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.32));
+        const sun = new THREE.DirectionalLight(0xfff4e0, 0.55);
+        sun.position.set(4.5, 8, 3.5);
+        sun.name = "sun";
+        scene.add(sun);
 
-        const island = new THREE.Group();
-        island.add(createIslandModel({ tier: tier.tier }));
+        const time = { value: 0 };
+        const island = createVoxelIsland({ tier: tier.tier, time });
+        const voxels = island.group;
 
-        const castle = createCastleModel({ tier: tier.tier });
-        castle.scale.setScalar(0.5);
-        castle.position.set(0.25, 0, -0.15);
-        island.add(castle);
+        // Static shadow map: the sun never moves and the geometry never changes,
+        // so render it ONCE — cost is zero from frame 2 onward. Hard-edged
+        // (BasicShadowMap) is both the cheapest and the most Minecraft-authentic.
+        const shadows = tier.tier !== "static";
+        if (shadows) {
+          renderer.shadowMap.enabled = true;
+          renderer.shadowMap.type = THREE.BasicShadowMap;
+          renderer.shadowMap.autoUpdate = false;
+          sun.castShadow = true;
+          sun.shadow.mapSize.set(tier.tier === "reduced" ? 512 : 1024, tier.tier === "reduced" ? 512 : 1024);
+          const c = sun.shadow.camera;
+          c.left = -4;
+          c.right = 4;
+          c.top = 4;
+          c.bottom = -4;
+          c.near = 0.5;
+          c.far = 24;
+          c.updateProjectionMatrix();
+          sun.shadow.normalBias = 0.03;
+          renderer.shadowMap.needsUpdate = true;
+        }
 
-        const tree = createSakuraTreeModel({ tier: tier.tier });
-        tree.scale.setScalar(0.62);
-        tree.position.set(-1.35, 0, 0.55);
-        island.add(tree);
+        const holder = new THREE.Group();
+        holder.name = "island-holder";
+        holder.add(voxels);
 
-        const torii = createToriiModel();
-        torii.scale.setScalar(0.5);
-        torii.position.set(1.3, 0, 0.95);
-        torii.rotation.y = -0.4;
-        island.add(torii);
-
-        const lantern = createLanternModel();
-        lantern.position.set(0.95, 0, -1.15);
-        island.add(lantern);
-
-        // Framing: island upper-right on desktop (bottom-left stays open for the
-        // name lockup); upper-center on mobile.
+        // Framing (unchanged from the low-poly version): centred, upper area.
         const ISLAND_X = wide ? 0 : 0.1;
-        const BASE_Y = wide ? 3.05 : 3.4;
-        island.position.set(ISLAND_X, BASE_Y, 0);
-        island.scale.setScalar(wide ? 0.82 : 0.62);
-        scene.add(island);
+        // Sits high enough that the voxel spike clears the name lockup below.
+        const BASE_Y = wide ? 3.6 : 3.85;
+        holder.position.set(ISLAND_X, BASE_Y, 0);
+        holder.scale.setScalar(wide ? 0.56 : 0.42);
+        scene.add(holder);
 
-        let petals: { mesh: THREE.InstancedMesh; update: (t: number) => void } | null = null;
+        let petals: { mesh: THREE.InstancedMesh; update: (t: number) => void } | null =
+          null;
         if (tier.petals > 0) {
           petals = createPetalField(tier.petals);
+          petals.mesh.name = "petals";
           petals.mesh.position.set(ISLAND_X * 0.4, 1.4, 0);
           scene.add(petals.mesh);
         }
 
         const mist = createMist(tier.animate ? 5 : 4);
+        mist.mesh.name = "mist";
         mist.mesh.position.set(ISLAND_X, wide ? 1.5 : 1.1, 0);
         scene.add(mist.mesh);
 
@@ -122,14 +130,22 @@ export function HanamiDiorama({ className }: { className?: string }) {
         camera.position.copy(baseCam);
         camera.lookAt(target);
 
+        if (process.env.NODE_ENV !== "production") {
+          // Budget check: expect ~1-3 draw calls and ~20-40k triangles.
+          console.info(
+            `[voxel] ${island.stats.blocks} blocks -> ${island.stats.faces} faces (${island.stats.triangles} tris)`,
+          );
+        }
+
         if (!tier.animate) {
-          island.rotation.y = -0.25;
+          holder.rotation.y = -0.25;
           return { render: "once" };
         }
 
         return (t: number) => {
-          island.rotation.y = Math.sin(t * 0.12) * 0.45 - 0.1;
-          island.position.y = BASE_Y + Math.sin(t * 0.6) * 0.08;
+          time.value = t;
+          holder.rotation.y = Math.sin(t * 0.12) * 0.45 - 0.1;
+          holder.position.y = BASE_Y + Math.sin(t * 0.6) * 0.08;
           petals?.update(t);
           mist.update(t);
           const px = pointer.current.x;
