@@ -138,16 +138,29 @@ function windowBand(
   const centres = [0];
   for (let c = 6; c <= span - 1; c += 6) centres.push(c, -c);
 
+  const put4 = (t: number, y: number, id: BlockId) => {
+    grid.set(ox + t, y, oz - half, id);
+    grid.set(ox + t, y, oz + half, id);
+    grid.set(ox - half, y, oz + t, id);
+    grid.set(ox + half, y, oz + t, id);
+  };
+
   for (const c of centres) {
+    // A framed opening, not a slit. Dark timber posts either side and a lintel
+    // above turn each window into a bay, and it is that repeated bay rhythm —
+    // not the glazing — that gives the wall band its detail. Two-block-tall
+    // openings so they read at all at this on-screen size.
     for (let d = 0; d <= 1; d++) {
       const t = c + d;
       if (Math.abs(t) > span) continue;
-      for (let y = y0; y <= y1; y++) {
-        grid.set(ox + t, y, oz - half, "window");
-        grid.set(ox + t, y, oz + half, "window");
-        grid.set(ox - half, y, oz + t, "window");
-        grid.set(ox + half, y, oz + t, "window");
-      }
+      for (let y = y0; y <= y1; y++) put4(t, y, "window");
+    }
+    if (Math.abs(c - 1) <= span) for (let y = y0; y <= y1; y++) put4(c - 1, y, "darkbeam");
+    if (Math.abs(c + 2) <= span) for (let y = y0; y <= y1; y++) put4(c + 2, y, "darkbeam");
+    for (let d = -1; d <= 2; d++) {
+      if (Math.abs(c + d) > span) continue;
+      if (y1 + 1 <= y1) put4(c + d, y1, "darkbeam");
+      put4(c + d, y0 - 1, "darkbeam");
     }
   }
 }
@@ -274,13 +287,16 @@ function roofAnnulus(
     for (let z = oz - outer; z <= oz + outer; z++) {
       const r = Math.max(Math.abs(x - ox), Math.abs(z - oz));
       if (r < inner || r > outer) continue;
-      // Outermost ring of the course is the riser: darker, so the drop reads as
-      // a shadow line following the slope.
+      // Outermost ring of the course is the riser. Only a SLIGHT step down in
+      // value: the riser is a side face (FACE_SHADE 0.8) while the tread is a top
+      // face (1.0), so the geometry already darkens it ~20% for free. Using a
+      // genuinely dark block here double-darkened it into muddy black bands,
+      // where the reference has crisp lines on bright teal.
       grid.set(
         x,
         y,
         z,
-        r === outer && outer > inner ? "roofdark" : roofAt(x, y, z),
+        r === outer && outer > inner ? "coppercut" : roofAt(x, y, z),
       );
     }
 }
@@ -362,16 +378,27 @@ function tenshuRoof(
   // stairs give a true slope and a slab tip gives the flare beyond it.
   const eave = eaveRadius(wallHalf, overhang);
 
-  // Sloped eave course, then the flared slab tip half a block lower.
+  // ── the eave as a THICK assembly, not a lip ──
+  //
+  // This was the actual complaint and I kept fixing the wrong thing. The
+  // overhang was one half-slab plus a dark line: about a block and a half of
+  // total thickness, so from the side it read as a thin shelf. The reference's
+  // eave is a stacked mass several courses deep, and that depth is the whole
+  // reason its roofs look heavy.
+  //
+  // Three visible bands now: sloped tiles on top, a solid green body beneath
+  // them projecting one block further out as a drip lip, and a dark soffit under
+  // that. Each course meets the one above, so there are no gaps.
   ringShaped(grid, ox, oz, wallTop, eave - 1, "roofstair", HALF.BOTTOM);
   ringShaped(grid, ox, oz, wallTop, eave, "roofslab", HALF.BOTTOM);
+  roofAnnulus(grid, ox, oz, wallTop - 1, eave - 1, eave + 1);
   // Dark deck border under the tip — the eave's shadow line.
   //
   // A FULL cube, not a half slab. As a TOP-half slab it met the bottom slab above
   // it correctly, but left a half-block of air below itself, which stranded
   // whatever sat one cell under the eave — the tier below's gable finial, and any
   // leaves the sakura pushed under the overhang.
-  annulus(grid, ox, oz, wallTop - 1, eave, eave, "ridge");
+  annulus(grid, ox, oz, wallTop - 2, eave - 1, eave + 1, "ridge");
 
   // ── eave depth ──
   // An overhang this deep was reading as a flat plate seen edge-on, because
@@ -379,28 +406,28 @@ function tenshuRoof(
   // in a real roof those are the exposed rafter tails (垂木), and they are what
   // gives an eave visible thickness and rhythm from below.
   const tails = (t: number) => {
-    grid.setIfEmpty(ox + t, wallTop - 2, oz - eave, "darkbeam");
-    grid.setIfEmpty(ox + t, wallTop - 2, oz + eave, "darkbeam");
-    grid.setIfEmpty(ox - eave, wallTop - 2, oz + t, "darkbeam");
-    grid.setIfEmpty(ox + eave, wallTop - 2, oz + t, "darkbeam");
+    grid.setIfEmpty(ox + t, wallTop - 3, oz - eave, "darkbeam");
+    grid.setIfEmpty(ox + t, wallTop - 3, oz + eave, "darkbeam");
+    grid.setIfEmpty(ox - eave, wallTop - 3, oz + t, "darkbeam");
+    grid.setIfEmpty(ox + eave, wallTop - 3, oz + t, "darkbeam");
   };
   for (let t = -eave + 1; t <= eave - 1; t += 3) tails(t);
   // Corner rafters run past the corner, which is where a Japanese eave is
   // deepest and where the upturn needs something to spring from.
   for (const sx of [-1, 1] as const)
     for (const sz of [-1, 1] as const) {
-      grid.setIfEmpty(ox + sx * eave, wallTop - 2, oz + sz * eave, "darkbeam");
-      grid.setIfEmpty(ox + sx * (eave - 1), wallTop - 2, oz + sz * eave, "darkbeam");
-      grid.setIfEmpty(ox + sx * eave, wallTop - 2, oz + sz * (eave - 1), "darkbeam");
+      grid.setIfEmpty(ox + sx * eave, wallTop - 3, oz + sz * eave, "darkbeam");
+      grid.setIfEmpty(ox + sx * (eave - 1), wallTop - 3, oz + sz * eave, "darkbeam");
+      grid.setIfEmpty(ox + sx * eave, wallTop - 3, oz + sz * (eave - 1), "darkbeam");
     }
 
   // Gilt bracket caps punctuating the fascia, on the reference's ~6-block
   // spacing, so the dark border has a beat instead of being one long stripe.
-  for (let t = -eave; t <= eave; t += 6) {
-    grid.set(ox + t, wallTop - 1, oz - eave, "gold");
-    grid.set(ox + t, wallTop - 1, oz + eave, "gold");
-    grid.set(ox - eave, wallTop - 1, oz + t, "gold");
-    grid.set(ox + eave, wallTop - 1, oz + t, "gold");
+  for (let t = -eave + 2; t <= eave - 2; t += 9) {
+    grid.set(ox + t, wallTop - 2, oz - eave - 1, "gold");
+    grid.set(ox + t, wallTop - 2, oz + eave + 1, "gold");
+    grid.set(ox - eave - 1, wallTop - 2, oz + t, "gold");
+    grid.set(ox + eave + 1, wallTop - 2, oz + t, "gold");
   }
 
   // 反り — the corner flicked up turns a stepped eave into a curved one, which
@@ -500,13 +527,11 @@ function gable(
       // blank panel.
       for (let t = -w; t <= w; t++) {
         const a = Math.abs(t);
-        put(
-          t,
-          yBase + r,
-          face,
-          s,
-          a === w ? "roof" : a === w - 1 && w >= 2 ? "gold" : "plaster",
-        );
+        // Gold only every other course of the rake. A solid gilt line down both
+        // slopes swamped the white field it was meant to frame — the reference's
+        // gables read white first, with gold as punctuation.
+        const rake = a === w - 1 && w >= 2 && r % 2 === 0;
+        put(t, yBase + r, face, s, a === w ? "roof" : rake ? "gold" : "plaster");
       }
 
       // The dormer's own pitched cheeks, receding back to the wall. Without
@@ -623,7 +648,9 @@ export function buildCastle(
     const wHi = y1 - 2;
     if (wHi >= wLo) {
       const wy = Math.floor((wLo + wHi) / 2);
-      windowBand(grid, ox, oz, wy, wy, half);
+      // Two rows where the storey can afford it: a single-row opening is a slit
+      // at this scale and gave the wall band no rhythm at all.
+      windowBand(grid, ox, oz, wy, Math.min(wy + 1, wHi), half);
     }
 
     // Dark corner posts running each wall's full height — the vertical accent
