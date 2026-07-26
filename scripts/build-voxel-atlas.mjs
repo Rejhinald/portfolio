@@ -50,7 +50,9 @@ const SRC = SOURCES[sourceName];
 if (!SRC) throw new Error(`unknown --source ${sourceName}`);
 
 export const TILE_PX = 16;
-const GRID = 8; // 8x8 = 64 slots
+// 16x16 = 256 slots. Power-of-two, and the unused cells are fully
+// transparent so they cost almost nothing in the PNG.
+const GRID = 16;
 const ATLAS_PX = TILE_PX * GRID;
 
 /**
@@ -159,6 +161,11 @@ const TILES = [
   { key: "shu", src: "red_concrete" },
   { key: "lanternLit", src: "sea_lantern", frame0: true },
   { key: "glow", src: "glowstone" },
+  // The actual hanging-lantern and chain textures. `lantern.png` is a 16x48
+  // three-frame animation, so it needs the same frame-0 crop as prismarine —
+  // these were previously (wrongly) drawing sea_lantern and iron_bars.
+  { key: "lantern", src: "lantern", frame0: true },
+  { key: "chain", src: "chain" },
 ];
 
 if (TILES.length > GRID * GRID) {

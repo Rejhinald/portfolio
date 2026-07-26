@@ -55,20 +55,19 @@ export const stateHalf = (s: number): Half => ((s >> 2) & 1) as Half;
  * stairs build a soffit under an overhang.
  */
 /**
- * Vanilla's chain: a 3/16-wide post running the full height of the block. The
- * real model is two crossed flat quads, but a thin box reads the same at this
- * scale and keeps every block going through one code path.
+ * Chain and hanging lantern, deliberately FATTER than vanilla.
+ *
+ * Vanilla's chain is 3/16 wide and its lantern body 6/16. A block is only ~13
+ * device pixels here, which puts those at roughly 2px and 5px — they vanished
+ * entirely. Scaled to 6/16 and 11/16 they land near 5px and 9px, enough to read
+ * as a lantern on a chain. The same rule as the textures: detail finer than the
+ * on-screen block size has to be exaggerated or it may as well not exist.
  */
-const CHAIN_BOXES: readonly Box[] = [[0.40625, 0, 0.40625, 0.59375, 1, 0.59375]];
+const CHAIN_BOXES: readonly Box[] = [[0.3125, 0, 0.3125, 0.6875, 1, 0.6875]];
 
-/**
- * Vanilla's hanging lantern: a 6x8x6 body slung under the block's ceiling, with
- * a 2x2 bail above it. Hung rather than standing, so it reads as suspended from
- * the eave instead of resting in mid air.
- */
 const HANG_LANTERN_BOXES: readonly Box[] = [
-  [0.3125, 0.125, 0.3125, 0.6875, 0.625, 0.6875], // body
-  [0.4375, 0.625, 0.4375, 0.5625, 1, 0.5625], // bail up to the ceiling
+  [0.15625, 0.06, 0.15625, 0.84375, 0.72, 0.84375], // body
+  [0.375, 0.72, 0.375, 0.625, 1, 0.625], // bail up to the ceiling
 ];
 
 export function shapeBoxes(shape: Shape, state: number): readonly Box[] {

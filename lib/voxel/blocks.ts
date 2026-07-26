@@ -254,14 +254,14 @@ export const BLOCKS: Record<BlockId, BlockDef> = {
   // Hung under the eaves on a chain. Both are sub-cube, so neither may occlude
   // its neighbours — they go in the cutout pass with the leaves.
   hanglantern: {
-    faces: all(TILE.lanternLit),
+    faces: all(TILE.lantern),
     shape: "hanglantern",
     emission: 15,
     cutout: true,
     transparent: true,
   },
   chain: {
-    faces: all(TILE.window),
+    faces: all(TILE.chain),
     shape: "chain",
     cutout: true,
     transparent: true,
