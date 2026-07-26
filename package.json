@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "measure:voxel": "vitest run --include '**/*.perf.ts'"
+    "measure:voxel": "vitest run --config vitest.perf.config.ts"
   },
   "dependencies": {
     "next": "^16.0.0",
