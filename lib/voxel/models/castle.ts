@@ -488,6 +488,10 @@ function tenshuRoof(
     grid.set(ox + sx * eave, wallTop, oz + sz * (eave - 1), "roofdark");
     grid.set(ox + sx * eave, wallTop + 1, oz + sz * eave, "gold");
     grid.set(ox + sx * eave, wallTop + 2, oz + sz * eave, "gold");
+    // A slender gilt spike above it. Every eave corner on the real tenshu
+    // carries one, and they are what make the upturned corners read against sky.
+    grid.set(ox + sx * eave, wallTop + 3, oz + sz * eave, "quartzpillar");
+    grid.set(ox + sx * eave, wallTop + 4, oz + sz * eave, "gold");
     grid.set(ox + sx * (eave - 1), wallTop + 1, oz + sz * eave, "gold");
     grid.set(ox + sx * eave, wallTop + 1, oz + sz * (eave - 1), "gold");
   }
@@ -569,10 +573,12 @@ function gable(
         // 妻 tsuma — the white face. Kept dominantly white, broken only by narrow
         // vertical timber marks on a regular beat, which is what the reference
         // uses and what stops a big plaster triangle reading as a blank sheet.
+        // On the real castle the 破風 rake is GILDED — a gold board with a dark
+        // shadow edge outside it — not a green one. That gold diagonal is the
+        // single most recognisable thing about an Osaka gable.
         let id: BlockId;
         if (a === w) id = "roofdark";
-        else if (a === w - 1 && w >= 2) id = "roof";
-        else if (a === w - 2 && w >= 3 && r % 2 === 0) id = "gold";
+        else if (a === w - 1 && w >= 2) id = "gold";
         else if (w >= 5 && a % 3 === 1 && r > 0 && r < height - 1) id = "darkbeam";
         else id = "plaster";
         put(t, yBase + r, face, s, id);
@@ -630,7 +636,9 @@ export function buildCastle(
   // Battered inward as it rises, the way a real 石垣 wall leans back.
   const PLINTH_TOP = 12;
   for (let y = 1; y <= PLINTH_TOP; y++) {
-    const half = 22 - Math.floor((y - 1) / 3);
+    // Steeper batter: the real 石垣 visibly leans back as it rises, and a
+    // near-vertical plinth reads as a box rather than as a fortification.
+    const half = 23 - Math.floor(((y - 1) * 2) / 3);
     baseCourse(grid, ox, oz, y, half, PLINTH_TOP);
     // A stair rim caps each batter step so the setbacks read as courses.
     if ((y - 1) % 3 === 2) {
@@ -665,6 +673,40 @@ export function buildCastle(
     { y0: 48, y1: 53, half: 9, overhang: 3, gable: "x" },
     { y0: 57, y1: 62, half: 7, overhang: 3, gable: "z" },
   ];
+
+  /**
+   * The top storey is an OPEN observation deck, not another walled tier.
+   *
+   * On the real tenshu the crowning floor is dark and open — timber posts, a
+   * railing, and gilt tiger reliefs on the band — which is why it reads as the
+   * climax of the building rather than as one more repeat of the same white
+   * band. Reproducing that is the last silhouette element the build was missing:
+   * a dark, visually lighter cap over four white storeys.
+   */
+  const openDeck = (y0: number, y1: number, half: number): void => {
+    for (let y = y0; y <= y1; y++) {
+      for (let x = ox - half; x <= ox + half; x++)
+        for (let z = oz - half; z <= oz + half; z++) {
+          if (Math.max(Math.abs(x - ox), Math.abs(z - oz)) !== half) continue;
+          const t = Math.abs(x - ox) === half ? z - oz : x - ox;
+          const corner =
+            Math.abs(x - ox) === half && Math.abs(z - oz) === half;
+          // Posts at the corners and on a regular beat; open between them, with
+          // a solid dark rail along the bottom course.
+          const post = corner || Math.abs(t) % 3 === 0;
+          if (y === y0) grid.set(x, y, z, "darkwood");
+          else if (post) grid.set(x, y, z, "darkbeam");
+          else grid.clear(x, y, z);
+        }
+    }
+    // Gilt reliefs on the band beneath the deck — the tigers' position.
+    for (const s2 of [-1, 1] as const) {
+      for (const t of [-3, 3]) {
+        grid.set(ox + t, y0, oz + s2 * half, "gold");
+        grid.set(ox + s2 * half, y0, oz + t, "gold");
+      }
+    }
+  };
 
   TIERS.forEach((tier, i) => {
     const { y0, y1, half, overhang } = tier;
@@ -720,6 +762,9 @@ export function buildCastle(
     // Relief BEFORE the roof and gable, so those overwrite it where they meet
     // rather than leaving pilasters poking through an eave.
     wallRelief(grid, ox, oz, y0, y1, half, WOOD[Math.min(i, WOOD.length - 1)]);
+
+    // The crowning storey becomes an open deck instead of a fifth white band.
+    if (i === TIERS.length - 1) openDeck(y0, y1, half);
 
     // A skirt roof only makes sense on a storey with enough wall to divide —
     // on a short one it would simply collide with its own eave.
