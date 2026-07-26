@@ -312,6 +312,36 @@ function tenshuRoof(
   // leaves the sakura pushed under the overhang.
   annulus(grid, ox, oz, wallTop - 1, eave, eave, "ridge");
 
+  // ── eave depth ──
+  // An overhang this deep was reading as a flat plate seen edge-on, because
+  // nothing broke its underside. The reference tucks dark timber under there;
+  // in a real roof those are the exposed rafter tails (垂木), and they are what
+  // gives an eave visible thickness and rhythm from below.
+  const tails = (t: number) => {
+    grid.setIfEmpty(ox + t, wallTop - 2, oz - eave, "darkbeam");
+    grid.setIfEmpty(ox + t, wallTop - 2, oz + eave, "darkbeam");
+    grid.setIfEmpty(ox - eave, wallTop - 2, oz + t, "darkbeam");
+    grid.setIfEmpty(ox + eave, wallTop - 2, oz + t, "darkbeam");
+  };
+  for (let t = -eave + 1; t <= eave - 1; t += 3) tails(t);
+  // Corner rafters run past the corner, which is where a Japanese eave is
+  // deepest and where the upturn needs something to spring from.
+  for (const sx of [-1, 1] as const)
+    for (const sz of [-1, 1] as const) {
+      grid.setIfEmpty(ox + sx * eave, wallTop - 2, oz + sz * eave, "darkbeam");
+      grid.setIfEmpty(ox + sx * (eave - 1), wallTop - 2, oz + sz * eave, "darkbeam");
+      grid.setIfEmpty(ox + sx * eave, wallTop - 2, oz + sz * (eave - 1), "darkbeam");
+    }
+
+  // Gilt bracket caps punctuating the fascia, on the reference's ~6-block
+  // spacing, so the dark border has a beat instead of being one long stripe.
+  for (let t = -eave; t <= eave; t += 6) {
+    grid.set(ox + t, wallTop - 1, oz - eave, "gold");
+    grid.set(ox + t, wallTop - 1, oz + eave, "gold");
+    grid.set(ox - eave, wallTop - 1, oz + t, "gold");
+    grid.set(ox + eave, wallTop - 1, oz + t, "gold");
+  }
+
   // 反り — the corner flicked up turns a stepped eave into a curved one, which
   // is where the eye lands on a real tenshu. Gold tips it.
   //
@@ -391,10 +421,20 @@ function gable(
     for (let r = 0; r <= height; r++) {
       const w = Math.max(0, Math.round(halfW * (1 - r / height)));
 
-      // Front face: white plaster infill inside a green tile border, which is
-      // exactly how the reference reads — a bright triangle rimmed in roof.
+      // Front face, built in layers rather than as one flat triangle:
+      //   green tile border -> gilt rake just inside it -> plaster field.
+      // The tutorial puts a gold block on every stair of the gable diagonal, and
+      // that bright line following the slope is what stops the face reading as a
+      // blank panel.
       for (let t = -w; t <= w; t++) {
-        put(t, yBase + r, face, s, Math.abs(t) === w ? "roof" : "plaster");
+        const a = Math.abs(t);
+        put(
+          t,
+          yBase + r,
+          face,
+          s,
+          a === w ? "roof" : a === w - 1 && w >= 2 ? "gold" : "plaster",
+        );
       }
 
       // The dormer's own pitched cheeks, receding back to the wall. Without
@@ -404,6 +444,22 @@ function gable(
         put(w, yBase + r, wallHalf + j, s, "roof");
       }
     }
+
+    // Centre medallion: the chiselled-quartz boss the tutorial sets in the middle
+    // of every gable, ringed in gold. One focal point per face, which is what the
+    // eye actually lands on.
+    if (halfW >= 4 && height >= 3) {
+      const my = yBase + Math.max(1, Math.round(height * 0.38));
+      put(0, my, face, s, "quartzchiseled");
+      put(-1, my, face, s, "gold");
+      put(1, my, face, s, "gold");
+      put(0, my - 1, face, s, "gold");
+    }
+
+    // NOTE: no rafter tails under the dormer. Where the tier's overhang equals
+    // PROJ the dormer face lands on exactly the eave ring's radius, so a beam
+    // below it sits on a half-slab and leaves a visible half-block of air. The
+    // main eave's own rafters already read under that overhang anyway.
 
     // Ridge running from the apex back into the roof, then the gold finial.
     for (let j = 0; j <= PROJ; j++) {
