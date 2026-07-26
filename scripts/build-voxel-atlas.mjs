@@ -166,6 +166,9 @@ const TILES = [
   // these were previously (wrongly) drawing sea_lantern and iron_bars.
   { key: "lantern", src: "lantern", frame0: true },
   { key: "chain", src: "chain" },
+  // Traditional red window. The reference's openings are a warm red-brown, and
+  // near-black iron bars merged into the wall's shadows at any distance.
+  { key: "redwindow", src: "red_nether_bricks" },
 ];
 
 if (TILES.length > GRID * GRID) {

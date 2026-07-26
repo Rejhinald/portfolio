@@ -75,6 +75,7 @@ export const TILE = {
   glow: [15, 3],
   lantern: [0, 4],
   chain: [1, 4],
+  redwindow: [2, 4],
 } as const satisfies Record<string, readonly [number, number]>;
 
 export type TileName = keyof typeof TILE;

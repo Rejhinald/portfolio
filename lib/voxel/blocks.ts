@@ -243,7 +243,7 @@ export const BLOCKS: Record<BlockId, BlockDef> = {
   // flood fill, and is ignored by the daylight one, so this lights the storeys
   // from within after dark while leaving the day render untouched.
   window: {
-    faces: all(TILE.window),
+    faces: all(TILE.redwindow),
     cutout: true,
     transparent: true,
     emission: 11,

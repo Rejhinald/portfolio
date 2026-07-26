@@ -155,13 +155,10 @@ function windowBand(
       if (Math.abs(t) > span) continue;
       for (let y = y0; y <= y1; y++) put4(t, y, "window");
     }
-    if (Math.abs(c - 1) <= span) for (let y = y0; y <= y1; y++) put4(c - 1, y, "darkbeam");
-    if (Math.abs(c + 2) <= span) for (let y = y0; y <= y1; y++) put4(c + 2, y, "darkbeam");
-    for (let d = -1; d <= 2; d++) {
-      if (Math.abs(c + d) > span) continue;
-      if (y1 + 1 <= y1) put4(c + d, y1, "darkbeam");
-      put4(c + d, y0 - 1, "darkbeam");
-    }
+    // Lintel only — no side posts. Full-height dark posts beside every opening
+    // competed with the pilasters and read as damage rather than framing. The
+    // reference keeps its walls nearly blank so the windows carry the rhythm;
+    // white space is what makes them legible at a distance.
   }
 }
 
@@ -232,10 +229,9 @@ function wallRelief(
     }
     // Mid-wall pilasters in pairs, echoing the reference's grouped quartz.
     for (let c = 6; c <= half - 3; c += 7) {
-      for (const s of [-1, 1] as const) {
-        post4(s * c, y);
-        post4(s * (c + 1), y);
-      }
+      // ONE pilaster per bay, not a pair. Doubling them halved the clear white
+      // between bays, which is the surface the windows need to read against.
+      for (const s of [-1, 1] as const) post4(s * c, y);
       void post; // pilasters are quartz; `post` is only for the sill and cap
     }
   }
@@ -326,8 +322,10 @@ function mokoshi(
   project: number,
 ): void {
   const tip = wallHalf + project;
-  roofAnnulus(grid, ox, oz, y, wallHalf + 1, tip - 1);
-  ringShaped(grid, ox, oz, y, tip, "roofslab", HALF.BOTTOM);
+  // Full cubes throughout, including the tip. A half-slab tip is a magnet for
+  // half-block gaps whenever anything lands above it, and at this on-screen size
+  // the extra half block of thinness bought nothing.
+  roofAnnulus(grid, ox, oz, y, wallHalf + 1, tip);
   // Dark underside, one course down, so the band reads as a solid mass from
   // below rather than as a paper flange.
   annulus(grid, ox, oz, y - 1, wallHalf + 1, tip, "ridge");
@@ -435,7 +433,10 @@ function tenshuRoof(
   // it correctly, but left a half-block of air below itself, which stranded
   // whatever sat one cell under the eave — the tier below's gable finial, and any
   // leaves the sakura pushed under the overhang.
-  annulus(grid, ox, oz, wallTop - 2, eave - 1, eave + 1, "ridge");
+  // Dark underside kept NARROW. At three cells wide it read as another wall
+  // layer rather than as the thin shadow line under an eave — the roof mass
+  // should be thick, its dark fascia should not.
+  annulus(grid, ox, oz, wallTop - 2, eave, eave + 1, "ridge");
 
   // ── eave depth ──
   // An overhang this deep was reading as a flat plate seen edge-on, because
@@ -458,14 +459,10 @@ function tenshuRoof(
       grid.setIfEmpty(ox + sx * eave, wallTop - 3, oz + sz * (eave - 1), "darkbeam");
     }
 
-  // Gilt bracket caps punctuating the fascia, on the reference's ~6-block
-  // spacing, so the dark border has a beat instead of being one long stripe.
-  for (let t = -eave + 2; t <= eave - 2; t += 9) {
-    grid.set(ox + t, wallTop - 2, oz - eave - 1, "gold");
-    grid.set(ox + t, wallTop - 2, oz + eave + 1, "gold");
-    grid.set(ox - eave - 1, wallTop - 2, oz + t, "gold");
-    grid.set(ox + eave + 1, wallTop - 2, oz + t, "gold");
-  }
+  // NO repeating gold along the fascia. Gold is punctuation: spread thinly over
+  // every eave it stopped meaning anything, and the corner onigawara and gable
+  // peaks — the places it should mark — lost their emphasis. Removing it makes
+  // the gold that remains read as richer, not poorer.
 
   // 反り — the corner flicked up turns a stepped eave into a curved one, which
   // is where the eye lands on a real tenshu. Gold tips it.
@@ -564,11 +561,21 @@ function gable(
       // blank panel.
       for (let t = -w; t <= w; t++) {
         const a = Math.abs(t);
-        // Gold only every other course of the rake. A solid gilt line down both
-        // slopes swamped the white field it was meant to frame — the reference's
-        // gables read white first, with gold as punctuation.
-        const rake = a === w - 1 && w >= 2 && r % 2 === 0;
-        put(t, yBase + r, face, s, a === w ? "roof" : rake ? "gold" : "plaster");
+        // 破風 hafu — the bargeboards. Two cells thick with a DARK outer edge, so
+        // they read as boards with a shadowed lip rather than as a painted line.
+        // Gold every other course inside them is punctuation, not an outline: a
+        // solid gilt rake swamped the white field it exists to frame.
+        //
+        // 妻 tsuma — the white face. Kept dominantly white, broken only by narrow
+        // vertical timber marks on a regular beat, which is what the reference
+        // uses and what stops a big plaster triangle reading as a blank sheet.
+        let id: BlockId;
+        if (a === w) id = "roofdark";
+        else if (a === w - 1 && w >= 2) id = "roof";
+        else if (a === w - 2 && w >= 3 && r % 2 === 0) id = "gold";
+        else if (w >= 5 && a % 3 === 1 && r > 0 && r < height - 1) id = "darkbeam";
+        else id = "plaster";
+        put(t, yBase + r, face, s, id);
       }
 
       // The dormer's own pitched cheeks, receding back to the wall. Without
@@ -576,6 +583,13 @@ function gable(
       for (let j = 0; j < PROJ; j++) {
         put(-w, yBase + r, wallHalf + j, s, "roof");
         put(w, yBase + r, wallHalf + j, s, "roof");
+      }
+      // Its own little roof, one cell outside the bargeboard along the whole
+      // rake — the chidori-hafu is a roofed dormer, not a triangle drawn on the
+      // slope, and this is the course that caps it.
+      if (w + 1 <= halfW) {
+        put(-(w + 1), yBase + r, face, s, "roof");
+        put(w + 1, yBase + r, face, s, "roof");
       }
     }
 
@@ -729,8 +743,11 @@ export function buildCastle(
     // stack of roofs. Clamped so the smallest tier still has a wall left.
     // Wide but shallow: the width carries the silhouette, while the height is
     // kept clear of the eave belonging to the storey above.
-    const gw = Math.max(3, Math.round(half * 0.62));
-    const gh = Math.max(3, Math.round(gw * 0.55));
+    // Larger and steeper. The gable is the build's strongest graphic element and
+    // the one the eye reads first; at 0.62 of the wall it was competing with the
+    // roofs rather than anchoring the facade.
+    const gw = Math.max(3, Math.round(half * 0.8));
+    const gh = Math.max(3, Math.round(gw * 0.62));
     gable(grid, ox, oz, y1 + 2, half, gw, gh, tier.gable);
   });
 
