@@ -1,37 +1,32 @@
-import { describe, it } from "vitest";
+import { describe, it, expect } from "vitest";
 import { mulberry32 } from "@/lib/three/prng";
 import { VoxelGrid } from "@/lib/voxel/grid";
 import { BLOCKS, type BlockId } from "@/lib/voxel/blocks";
 import { buildCastle } from "@/lib/voxel/models/castle";
+import { SHELL_COUNT, SHELL_DATA, SHELL_PALETTE } from "@/lib/voxel/models/castle-shell";
 
 /**
- * Print the castle as an ASCII cross-section plus the proportion metrics that
- * can be compared DIRECTLY against the same numbers measured from the reference
- * world save.
+ * Print the castle as an ASCII cross-section, and check the transcription
+ * decodes intact.
  *
  *   npm run measure:voxel
  *
- * Why this exists: six rounds of "does this look right?" were spent eyeballing
- * screenshots against reference slices, and the thing that was actually wrong —
- * an inverted wall-to-roof ratio — is a NUMBER that was visible the whole time.
- * Reading it off the build directly turns an aesthetic argument into a diff.
+ * This file used to compare the build's proportions against numbers measured
+ * from the reference world — wall rows vs roof rows, taper per storey — because
+ * the castle was hand-generated and those ratios were how it drifted.
  *
- * Reference values, measured from Cortezerino's world (see REFERENCE below):
- * every tier is ~5-8 rows of wall under a ~3-row roof, wall:roof about 2.7:1,
- * pitch a dead constant 2 horizontal : 1 vertical, and on all but the top tier
- * the roof dies into the wall above instead of climbing to a ridge.
+ * That comparison is gone, for a good reason: the castle is now TRANSCRIBED from
+ * the reference, so it cannot drift from it, and the metric was reporting the
+ * reference itself as wrong. It classified a row by sampling a 2-block slice
+ * through the centre, which counts whatever interior blocks happen to sit on
+ * that line — and the transcription deliberately drops interior blocks the
+ * camera cannot see. Measured on the source: the same rule gives 3.09:1 over a
+ * 2-block slice and 12.75:1 over the full footprint. A number that swings by 4x
+ * on slice width was never measuring the silhouette.
+ *
+ * What is worth checking now is that the payload survives the trip, so the
+ * remaining assertions are about the transcription itself.
  */
-
-/** Measured from the reference tenshu — the target this build is compared to. */
-const REFERENCE = {
-  whiteMassWidth: 43,
-  whiteMassHeight: 54,
-  plinthCourses: 17,
-  wallRowsPerTier: [8, 7, 5],
-  roofRowsPerTier: [3, 3, 3],
-  wallToRoof: 2.7,
-  pitchRunPerRise: 2,
-};
 
 /** One character per material family, so the section reads at a glance. */
 function sym(id: BlockId | undefined): string {
@@ -51,7 +46,7 @@ function sym(id: BlockId | undefined): string {
 }
 
 describe("MEASURE", () => {
-  it("castle section + proportions vs the reference", () => {
+  it("castle section", () => {
     const grid = new VoxelGrid();
     buildCastle(grid, 0, 0, mulberry32(20260726));
 
@@ -63,7 +58,6 @@ describe("MEASURE", () => {
       if (r > maxR) maxR = r;
     }
 
-    // --- ASCII section through the centre (x across, y up) ---
     console.log(`\n=== SECTION at z=0  (width ${maxR * 2 + 1}, height ${maxY}) ===`);
     for (let y = maxY; y >= 1; y--) {
       let row = "";
@@ -71,72 +65,41 @@ describe("MEASURE", () => {
       if (row.trim()) console.log(`y${String(y).padStart(3)} |${row}|`);
     }
 
-    // --- per-layer widths, which is where the taper shows up ---
-    const widthAt: number[] = [];
-    for (let y = 1; y <= maxY; y++) {
-      let w = -1;
-      for (let x = -maxR; x <= maxR; x++) {
-        if (grid.get(x, y, 0) || grid.get(x, y, 1)) w = Math.max(w, Math.abs(x));
-      }
-      widthAt[y] = w;
+    const kinds = new Map<string, number>();
+    for (const [, , , id] of grid.entries()) {
+      kinds.set(id, (kinds.get(id) ?? 0) + 1);
     }
+    const top = [...kinds].sort((a, b) => b[1] - a[1]).slice(0, 12);
+    console.log(`\n=== COMPOSITION (${grid.size} blocks) ===`);
+    for (const [id, n] of top) console.log(`  ${String(n).padStart(6)}  ${id}`);
+  });
 
-    // A "roof row" is one whose dominant material is roof/ridge; a "wall row" is
-    // one dominated by plaster. Counting them straight off the grid is what makes
-    // this comparable to the reference numbers rather than a matter of opinion.
-    // Classify by PRESENCE, not by which material has the most blocks.
-    // Counting the dominant symbol overstates roofs badly: an apron is a wide
-    // annulus while a wall is a thin ring, so roof always wins on block count
-    // even on rows where the wall is the visible mass. What matters visually is
-    // how many rows are wall, and how many are roof and NOTHING else.
-    let wallRows = 0;
-    let roofRows = 0;
-    const kinds: string[] = [];
-    for (let y = 1; y <= maxY; y++) {
-      let hasWall = false;
-      let hasRoof = false;
-      for (let x = -maxR; x <= maxR; x++) {
-        for (const z of [0, 1]) {
-          const c = sym(grid.get(x, y, z));
-          if (c === "W" || c === "Q" || c === "i") hasWall = true;
-          if (c === "P" || c === "N") hasRoof = true;
-        }
-      }
-      kinds[y] = hasWall ? "W" : hasRoof ? "P" : " ";
-      if (hasWall) wallRows++;
-      // Roof-EXCLUSIVE: a row of roof with no wall in it at all.
-      else if (hasRoof) roofRows++;
-    }
+  /**
+   * The transcription is a 57 KB base64 blob; a truncated or mis-chunked paste
+   * would still typecheck and would still render *something*, just with a
+   * missing corner nobody notices until it ships.
+   */
+  it("transcribed shell decodes intact", () => {
+    const bin = atob(SHELL_DATA);
+    expect(bin.length % 5, "payload is a whole number of 5-byte records").toBe(0);
+    expect(bin.length / 5).toBe(SHELL_COUNT);
 
-    const ratio = roofRows ? wallRows / roofRows : Infinity;
-    console.log("\n=== PROPORTIONS ===");
-    console.log(`  overall            ${maxR * 2 + 1} wide x ${maxY} tall` +
-      `  -> ${(maxY / (maxR * 2 + 1)).toFixed(2)} : 1 tall:wide`);
-    console.log(`  wall rows          ${wallRows}`);
-    console.log(`  roof rows          ${roofRows}`);
-    console.log(`  wall:roof          ${ratio.toFixed(2)} : 1` +
-      `   REFERENCE ${REFERENCE.wallToRoof} : 1` +
-      `   ${ratio >= 2 ? "OK" : "*** INVERTED — roofs too tall / walls too short ***"}`);
-    console.log(`  reference white    ${REFERENCE.whiteMassWidth} wide x ` +
-      `${REFERENCE.whiteMassHeight} tall -> ` +
-      `${(REFERENCE.whiteMassHeight / REFERENCE.whiteMassWidth).toFixed(2)} : 1`);
-
-    // --- taper: how sharply each storey narrows ---
-    console.log("\n=== TAPER (per-layer half-width, wall rows only) ===");
-    const steps: number[] = [];
-    let last = -1;
-    for (let y = 1; y <= maxY; y++) {
-      if (kinds[y] !== "W") continue;
-      if (widthAt[y] !== last) {
-        steps.push(widthAt[y]);
-        last = widthAt[y];
-      }
+    let maxPal = -1;
+    const shapes = [0, 0, 0];
+    for (let i = 0; i + 4 < bin.length; i += 5) {
+      maxPal = Math.max(maxPal, bin.charCodeAt(i + 3));
+      const kind = bin.charCodeAt(i + 4) & 3;
+      expect(kind, "shape kind is cube, slab or stair").toBeLessThan(3);
+      shapes[kind]++;
     }
-    console.log(`  storey half-widths: ${steps.join(" -> ")}`);
-    for (let i = 1; i < steps.length; i++) {
-      const r = steps[i] / steps[i - 1];
-      if (r < 1) console.log(`    step ${i}: x${r.toFixed(2)}` +
-        `${r < 0.8 ? "   <- steep; a uniform steep taper reads as a pagoda" : ""}`);
+    expect(maxPal, "every palette index resolves").toBeLessThan(SHELL_PALETTE.length);
+    for (const id of SHELL_PALETTE) {
+      expect(BLOCKS[id as BlockId], `palette entry ${id} is a real block`).toBeTruthy();
     }
+    console.log(
+      `\n=== SHELL === ${SHELL_COUNT} blocks  ` +
+        `cubes=${shapes[0]} slabs=${shapes[1]} stairs=${shapes[2]}  ` +
+        `palette=${SHELL_PALETTE.length}`,
+    );
   });
 });
