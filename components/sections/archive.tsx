@@ -26,7 +26,7 @@ export function Archive() {
           </DisplayHeading>
           <p className="mt-4 text-ink-2">
             Student projects and side builds, kept for the record. Click a
-            thumbnail to play its demo.
+            thumbnail to play its demo or open the live build.
           </p>
         </div>
 

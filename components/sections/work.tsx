@@ -5,11 +5,23 @@ import { DisplayHeading } from "@/components/system/display-heading";
 import { Hanko } from "@/components/system/hanko";
 import { work } from "@/lib/data/work";
 
-/** Placeholder logo tile — swap the initial for the real company icon later. */
-function LogoBox({ name }: { name: string }) {
+/** Company logo tile — real mark on washi, gold hairline frame. */
+function LogoBox({ name, logo }: { name: string; logo?: string }) {
   return (
-    <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-gold/50 bg-paper text-ink shadow-sm lg:h-16 lg:w-16">
-      <span className="display text-xl lg:text-2xl">{name.charAt(0)}</span>
+    <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-gold/50 bg-paper p-2.5 shadow-sm lg:h-16 lg:w-16">
+      {logo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={logo}
+          alt={`${name} logo`}
+          className="h-full w-full object-contain"
+          loading="lazy"
+        />
+      ) : (
+        <span className="display text-xl text-ink lg:text-2xl">
+          {name.charAt(0)}
+        </span>
+      )}
     </span>
   );
 }
@@ -41,7 +53,7 @@ export function Work() {
                   <Hanko glyph="現職" shape="tag" size={34} />
                 </span>
               )}
-              <LogoBox name={job.company} />
+              <LogoBox name={job.company} logo={job.logo} />
               <div>
                 <h3 className="display type-card-title text-ink">
                   {job.company}

@@ -10,7 +10,27 @@ export function ArchiveItem({ item }: { item: Item }) {
   return (
     <div className="group flex h-full flex-col overflow-hidden rounded-lg border border-rule bg-paper-2">
       <div className="relative aspect-video w-full overflow-hidden bg-ink">
-        {playing ? (
+        {!item.youtubeId ? (
+          // No demo video — static poster linking straight to the live site.
+          <a
+            href={item.liveHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute inset-0 block h-full w-full"
+            aria-label={`Open ${item.title} (opens in new tab)`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={item.image}
+              alt=""
+              className="h-full w-full object-cover object-top opacity-95 transition group-hover:opacity-100"
+              loading="lazy"
+            />
+            <span className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-shu text-paper shadow-lg transition group-hover:scale-110">
+              <ArrowUpRight size={16} />
+            </span>
+          </a>
+        ) : playing ? (
           <iframe
             className="absolute inset-0 h-full w-full"
             src={`https://www.youtube.com/embed/${item.youtubeId}?autoplay=1&rel=0`}

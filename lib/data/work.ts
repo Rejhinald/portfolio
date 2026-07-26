@@ -1,6 +1,7 @@
 export const work = [
   {
     company: "Avorino",
+    logo: "/logos/avorino.png",
     role: "Associate Developer",
     period: "Mar 2025 – Present",
     highlights: [
@@ -11,6 +12,7 @@ export const work = [
   },
   {
     company: "USA Wholesale Supplies",
+    logo: "/logos/usaws.png",
     role: "Junior Web Developer (Part-Time)",
     period: "Jun 2025 – Jul 2026",
     highlights: [
@@ -20,6 +22,7 @@ export const work = [
   },
   {
     company: "Hooli Software",
+    logo: "/logos/hooli.png",
     role: "Software Engineer Intern",
     period: "Nov 2024 – Feb 2025",
     highlights: [
