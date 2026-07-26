@@ -15,10 +15,11 @@ import { NexwinShowcase } from "@/components/showcases/nexwin-showcase";
 import { AduPortalShowcase } from "@/components/showcases/aduportal-showcase";
 import { SimpleProjexShowcase } from "@/components/showcases/simpleprojex-showcase";
 import { KkbShowcase } from "@/components/showcases/kkb-showcase";
+import { DailyLearningsShowcase } from "@/components/showcases/daily-learnings-showcase";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const NUMERALS = ["壱", "弐", "参", "肆", "伍"];
+const NUMERALS = ["壱", "弐", "参", "肆", "伍", "陸"];
 
 const REDUCE_MQ = "(prefers-reduced-motion: reduce)";
 
@@ -41,6 +42,7 @@ const recreations: Record<Showcase["key"], () => React.ReactNode> = {
   aduportal: AduPortalShowcase,
   simpleprojex: SimpleProjexShowcase,
   kkb: KkbShowcase,
+  dailylearnings: DailyLearningsShowcase,
 };
 
 function Recreation({ k }: { k: Showcase["key"] }) {

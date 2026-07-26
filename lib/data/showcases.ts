@@ -1,5 +1,11 @@
 export type Showcase = {
-  key: "avorino" | "nexwin" | "aduportal" | "simpleprojex" | "kkb";
+  key:
+    | "avorino"
+    | "nexwin"
+    | "aduportal"
+    | "simpleprojex"
+    | "kkb"
+    | "dailylearnings";
   name: string;
   role: string;
   year: string;
@@ -53,5 +59,14 @@ export const showcases: Showcase[] = [
     stack: "Next.js · Tailwind v4 · shadcn",
     href: "https://kkb-three.vercel.app",
     domain: "kkb-three.vercel.app",
+  },
+  {
+    key: "dailylearnings",
+    name: "Daily Learnings",
+    role: "Solo Developer",
+    year: "2026",
+    stack: "Next.js · TypeScript",
+    href: "https://daily-learnings.vercel.app",
+    domain: "daily-learnings.vercel.app",
   },
 ];

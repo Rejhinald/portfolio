@@ -13,15 +13,6 @@ export type ArchiveItem = {
 
 export const archive: ArchiveItem[] = [
   {
-    title: "Daily Learnings",
-    tech: ["Next.js", "TypeScript"],
-    year: "2026",
-    image: "/archive/daily-learnings.jpg",
-    blurb:
-      "One software-engineering concept a day, pulled apart from my own production code.",
-    liveHref: "https://daily-learnings.vercel.app/",
-  },
-  {
     title: "Delivio",
     tech: ["Next.js", "TypeScript", "Supabase"],
     year: "2024",
