@@ -64,6 +64,7 @@ Aesthetic arguments were replaced with numbers wherever possible:
 
 - `npm run measure:voxel` prints an ASCII cross-section of the castle plus the payload's integrity.
 - Invariant tests catch what the eye misses: **no fully detached blocks**, and **no visible vertical air gap** between stacked half-blocks (two bottom slabs stacked leave half a block of air, which reads on screen as a floating cube).
+- **Authoring invariants** catch the opposite failure — work that silently *doesn't happen*, which no type system can see because missing geometry is never invalid, just empty. Each model must build above a block-count floor (a waterfall that returns early now fails the suite instead of shipping), mirrored props must have balanced halves (a torii missing one pillar is a ~40% imbalance), and out-of-range writes must be zero. Ideas here are borrowed from [minebench](https://github.com/Ammaar-Alam/minebench)'s voxel validator, which drops and *reports* bad input rather than trusting it.
 - Every visual change is verified from a **screenshot read at the widths it ships at**, magnified where the detail is small — never from a green typecheck.
 - Four gates before every push: `tsc`, `eslint`, `vitest`, `next build`.
 
